@@ -8,16 +8,18 @@ const b = Fixed.from("5.2");
 
 console.log("(Fixed Point) A.mul: " + high.fixedPoint.toString());
 console.log("(Fixed Point) B.mul: " + low.fixedPoint.toString());
-console.log("(Fixed Point) Add 600 and 25.5: " + (a + b).num.toString());
+console.log("(Fixed Point) Add 600 and 25.5: " + (a + b).toString());
 console.log("(Native Math) Add 600 and 25.5: 8.61");
-console.log("(Fixed Point) Sub 600 and 25.5: " + (b - a).num.toString());
+console.log("(Fixed Point) Sub 600 and 25.5: " + (b - a).toString());
 console.log("(Native Math) Sub 600 and 25.5: 1.79");
-console.log("(Fixed Point) Div 600 and 25.5: " + (high / low).num.toString());
+console.log("(Fixed Point) Div 600 and 25.5: " + (high / low).toString());
 console.log("(Native Math) Div 600 and 25.5: 23.529411764705885");
-console.log("(Fixed Point) Mult 600 and 25.5: " + (high * low).num.toString());
+console.log("(Fixed Point) Mult 600 and 25.5: " + (a * b).toString());
 console.log("(Native Math) Mult 600 and 25.5: 15300.0")
 console.log("(Fixed Point) Log(10): " + high.log(10).toString());
 console.log("(Native Math) Log(10): " + Math.log(10).toString());
+console.log("(Fixed Point) Round(25.5): " + low.round().toString());
+console.log("(Native Math) Round(25.5): " + Math.round(25.5).toString());
 //console.log((reinterpret<f64>(0x4005BF0A8B145769)).toString());
 //const E = u64(271828182845904523536);
 //console.log((E < U64.MAX_VALUE).toString());

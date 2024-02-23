@@ -1,17 +1,15 @@
-//@inline const E = 271828182845904523536;
-//const E_Fixed = Fnum.from("2.71828182845904523536");
 /**
  * Represents a fixed-point number
  */
 export class Fixed {
   public num: u64;
-  constructor(num: u64, public fixedPoint: u64 = 0) {
+  constructor(num: u64, public fixedPoint: u64 = 1) {
     this.num = num;
   }
   /**
-   * Adds two Fnums together to calculate the sum
-   * @param x Number | String | Fnum
-   * @returns Fnum
+   * Adds two quantities together to calculate the sum
+   * @param x Number | String | Fixed
+   * @returns Fixed
    */
   add<T>(x: T): Fixed {
     const f = Fixed.from(x);
@@ -25,9 +23,9 @@ export class Fixed {
     }
   }
   /**
-   * Subtracts two Fnums from each other to calculate the difference
-   * @param x Number | String | Fnum
-   * @returns Fnum
+   * Subtracts two quantities from each other to calculate the difference
+   * @param x Number | String | Fixed
+   * @returns Fixed
    */
   sub<T>(x: T): Fixed {
     const f = Fixed.from(x);
@@ -41,29 +39,50 @@ export class Fixed {
     }
   }
   /**
-   * Divides two Fnums together to calculate the quotient
-   * @param x Number | String | Fnum
-   * @returns Fnum
+   * Divides two quantities together to calculate the quotient
+   * @param x Number | String | Fixed
+   * @returns Fixed
   */
   div<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    //     25.5                 600
-    //if (this.fixedPoint < f.fixedPoint) {
-    return new Fixed(maximize(this.num) / f.num, /*how do i calculate fixedPoint?*/);
-    //}
-    //return new Fnum(quo, this.fixedPoint);
+    if (this.fixedPoint <= f.fixedPoint) {
+      if (this.fixedPoint === f.fixedPoint) return new Fixed(maximize(this.num) / f.num, this.fixedPoint);
+      const right = this.num * (f.fixedPoint / this.fixedPoint);
+      const digits = decimalCount((this.num / this.fixedPoint) / (f.num / f.fixedPoint));
+      const quo = maximize(right) / f.num;
+      return new Fixed(quo, 10 ** (decimalCount(quo) - digits));
+    } else {
+      const left = this.num * (this.fixedPoint / f.fixedPoint);
+      const digits = decimalCount((this.num / this.fixedPoint) / (f.num / f.fixedPoint));
+      const quo = maximize(left) / f.num;
+      return new Fixed(quo, 10 ** (decimalCount(quo) - digits));
+    }
   }
+  /**
+   * Multiplies two quantities together to calculate the product
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
   mult<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.fixedPoint < f.fixedPoint) {
+    if (this.fixedPoint <= f.fixedPoint) {
       if (this.fixedPoint === f.fixedPoint) return new Fixed(this.num * f.num, this.fixedPoint);
-      return new Fixed((minimize(this.num) * f.num), 10000);
+      const right = this.num * (f.fixedPoint / this.fixedPoint);
+      const digits = decimalCount((this.num / this.fixedPoint) * (f.num / f.fixedPoint));
+      const prod = right * f.num;
+      return new Fixed(prod, 10 ** (decimalCount(prod) - digits));
+    } else {
+      const left = this.num * (this.fixedPoint / f.fixedPoint);
+      const digits = decimalCount((this.num / this.fixedPoint) * (f.num / f.fixedPoint));
+      const prod = left * f.num;
+      return new Fixed(prod, 10 ** (decimalCount(prod) - digits));
     }
-    return new Fixed((this.num * f.num) / this.fixedPoint);
   }
-  //round<T>(x: T): Fnum {
-  //  const f = Fnum.from(x);
-  //}
+  /**
+   * Calculates the natural log and returns the quantity
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
   log(x: f64): f64 {
     let result = 0.0;
     const term = (x - 1) / (x + 1);
@@ -82,7 +101,32 @@ export class Fixed {
       lastResult = result;
     }
   }
-
+  /**
+   * Rounds quantity and returns result
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  round(): Fixed {
+    const num = this.num / this.fixedPoint;
+    if (num % 10 > 4) this.num = num + 1;
+    else this.num = num;
+    this.fixedPoint = 1;
+    return this;
+  }
+  /**
+   * Floors quantity and returns the result
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  floor(): Fixed {
+    this.num = this.num / this.fixedPoint;
+    this.fixedPoint = 1;
+    return this;
+  }
+  min<T>(x: T): Fixed {
+    const f = Fixed.from(x);
+    return f;
+  }
   max<T>(x: T): Fixed {
     const f = Fixed.from(x);
     return f;
@@ -96,8 +140,8 @@ export class Fixed {
     return true;
   }
   /**
-   * Checks for equality between to Fnums
-   * @param x Number | String | Fnum
+   * Checks for equality between to Fixeds
+   * @param x Number | String | Fixed
    * @returns boolean
   */
   eq<T>(x: T): boolean {
@@ -105,8 +149,8 @@ export class Fixed {
     return this.num === f.num && this.fixedPoint === f.fixedPoint;
   }
   /**
-   * Checks for inequality between to Fnums
-   * @param x Number | String | Fnum
+   * Checks for inequality between to Fixeds
+   * @param x Number | String | Fixed
    * @returns boolean
   */
   neq<T>(x: T): boolean {
@@ -124,17 +168,16 @@ export class Fixed {
     }
     return count;
   }
-  /*toString(): string {
+  toString(): string {
     const num = this.num.toString();
     let r = "";
-    const place = num.length - decimalCount(this.fixedPoint);
-    console.log(`${this.fixedPoint} ${decimalCount(this.fixedPoint)} ${num.length}`)
+    const place = num.length + 1 - decimalCount(this.fixedPoint);
     for (let i = 0; i < num.length; i++) {
       if (i === place) r += ".";
       r += num.charAt(i);
     }
     return r;
-  }*/
+  }
   static from<T>(n: T): Fixed {
     if (n instanceof Fixed) return n;
     if (isString<T>()) {
@@ -153,7 +196,7 @@ export class Fixed {
       if (point) return new Fixed(val, 10 ** ((end - point) >> 1));
       return new Fixed(val);
     } else {
-      return new Fixed(n, 0);
+      return new Fixed(n, 1);
     }
   }
   @operator("+")
@@ -251,13 +294,13 @@ function minimize(x: u64): u64 {
 function decimalCount(x: u64): u64 {
   if (x > 999999999999999999) return 19
   if (x > 99999999999999999) return 18
-  if (x > 9999999999999999) return 10000000000000000
-  if (x > 999999999999999) return 1000000000000000
-  if (x > 99999999999999) return 100000000000000
-  if (x > 9999999999999) return 10000000000000
-  if (x > 999999999999) return 1000000000000
-  if (x > 99999999999) return 100000000000
-  if (x > 9999999999) return 10000000000
+  if (x > 9999999999999999) return 17
+  if (x > 999999999999999) return 16
+  if (x > 99999999999999) return 15
+  if (x > 9999999999999) return 14
+  if (x > 999999999999) return 13
+  if (x > 99999999999) return 12
+  if (x > 9999999999) return 11
   if (x > 999999999) return 10
   if (x > 99999999) return 9
   if (x > 9999999) return 8
