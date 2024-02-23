@@ -17,9 +17,11 @@ console.log("(Native Math) Div 600 and 25.5: 23.529411764705885");
 console.log("(Fixed Point) Mult 600 and 25.5: " + (a * b).toString());
 console.log("(Native Math) Mult 600 and 25.5: 15300.0")
 console.log("(Fixed Point) Log(10): " + high.log(10).toString());
+//console.log("(Fixed Point) LogFixed(10): " + high.logFixed(10).toString());
 console.log("(Native Math) Log(10): " + Math.log(10).toString());
 console.log("(Fixed Point) Round(25.5): " + low.round().toString());
 console.log("(Native Math) Round(25.5): " + Math.round(25.5).toString());
+console.log(`(Native Math) Div 9 and 11 ${Fixed.from("9").div(11).toString()} ${Fixed.from("9").div(11).fixedPoint} Flipped: ${Fixed.from("9").div(11).flipped}`);
 //console.log((reinterpret<f64>(0x4005BF0A8B145769)).toString());
 //const E = u64(271828182845904523536);
 //console.log((E < U64.MAX_VALUE).toString());

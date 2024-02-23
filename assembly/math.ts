@@ -3,7 +3,7 @@
  */
 export class Fixed {
   public num: u64;
-  constructor(num: u64, public fixedPoint: u64 = 1) {
+  constructor(num: u64, public fixedPoint: u64 = 1, public flipped: i32 = 0) {
     this.num = num;
   }
   /**
@@ -46,11 +46,17 @@ export class Fixed {
   div<T>(x: T): Fixed {
     const f = Fixed.from(x);
     if (this.fixedPoint <= f.fixedPoint) {
-      if (this.fixedPoint === f.fixedPoint) return new Fixed(maximize(this.num) / f.num, this.fixedPoint);
+      if (this.fixedPoint === f.fixedPoint) {
+        const lead = (this.num / f.num) / this.fixedPoint;
+        if (!lead) return new Fixed(maximize(this.num) / f.num, this.fixedPoint * 10, true);
+        return new Fixed(maximize(this.num) / f.num, this.fixedPoint);
+      }
       const right = this.num * (f.fixedPoint / this.fixedPoint);
-      const digits = decimalCount((this.num / this.fixedPoint) / (f.num / f.fixedPoint));
+      const lead = (this.num / this.fixedPoint) / (f.num / f.fixedPoint);
+      const digits = decimalCount(lead);
       const quo = maximize(right) / f.num;
-      return new Fixed(quo, 10 ** (decimalCount(quo) - digits));
+      console.log(`Lead: ` + lead.toString());
+      return new Fixed(quo, 10 ** (decimalCount(quo) - digits), !lead);
     } else {
       const left = this.num * (this.fixedPoint / f.fixedPoint);
       const digits = decimalCount((this.num / this.fixedPoint) / (f.num / f.fixedPoint));
@@ -97,6 +103,25 @@ export class Fixed {
         return lastResult * 2;
       }
       powerTerm *= (term * term);
+      divisor += 2;
+      lastResult = result;
+    }
+  }
+  logFixed(x: u64): Fixed {
+    let result = new Fixed(0);
+    const term = Fixed.from(x - 1).div(x + 1);
+    console.log(`Term: ${term.toString()} ${term.fixedPoint}`)
+    let powerTerm = term;
+    let divisor = 1;
+
+    let lastResult: Fixed = new Fixed(0, 10000);
+    while (true) {
+      result = result.add(powerTerm.div(divisor));
+      if (result.eq(lastResult)) {
+        console.log("Found accuracy at " + divisor.toString() + " operations");
+        return lastResult.mult(2);
+      }
+      powerTerm = powerTerm.mult(term.mult(term));
       divisor += 2;
       lastResult = result;
     }
@@ -171,6 +196,9 @@ export class Fixed {
   toString(): string {
     const num = this.num.toString();
     let r = "";
+    if (this.flipped) {
+      return "0." + "0".repeat(i32(decimalCount(this.fixedPoint / 100))) + num;
+    }
     const place = num.length + 1 - decimalCount(this.fixedPoint);
     for (let i = 0; i < num.length; i++) {
       if (i === place) r += ".";
@@ -185,11 +213,15 @@ export class Fixed {
       let end = n.length << 1;
       let point = 0;
       let val: u64 = 0;
+      let inversePoint = false;
       for (; start < end; start += 2) {
         const char = load<u16>(changetype<usize>(n) + <usize>start);
         if (char == 46) {
           point = start + 1;
-        } else {
+        } else if (char !== 48) {
+          if (!inversePoint && point) {
+            inversePoint = true;
+          }
           val = ((val * 10) + (char - 48));
         }
       }
@@ -292,6 +324,7 @@ function minimize(x: u64): u64 {
 }
 
 function decimalCount(x: u64): u64 {
+  if (x === 0) return 0;
   if (x > 999999999999999999) return 19
   if (x > 99999999999999999) return 18
   if (x > 9999999999999999) return 17
