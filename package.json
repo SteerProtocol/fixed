@@ -1,0 +1,58 @@
+{
+  "name": "as-fixed",
+  "version": "0.0.0",
+  "description": "Fixed Point Arithmetic for AssemblyScript",
+  "types": "assembly/index.ts",
+  "author": "Steer Protocol",
+  "contributors": [
+    "Jairus Tanaka"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "asp",
+    "bench:astral": "astral --optimizeLevel 3 --shrinkLevel 0 --converge --noAssert --uncheckedBehavior never --runtime stub",
+    "build:test": "asc assembly/test.ts -o build/test.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --optimizeLevel 0 --shrinkLevel 0 --noAssert --uncheckedBehavior always --runtime stub --textFile build/test.wat",
+    "build:bench": "asc bench/benchmark.ts -o bench/benchmark.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --optimizeLevel 3 --shrinkLevel 0 --converge --noAssert --uncheckedBehavior always --runtime stub",
+    "bench:wasmtime": "wasmtime ./bench/benchmark.wasm",
+    "bench:wavm": "wavm run ./bench/benchmark.wasm",
+    "test:wasmtime": "wasmtime ./build/test.wasm",
+    "test:wavm": "wavm run ./build/test.wasm",
+    "test:lunatic": "lunatic ./build/test.wasm",
+    "test:wasm3": "wasm3 ./build/test.wasm",
+    "prettier": "as-prettier -w ."
+  },
+  "devDependencies": {
+    "@as-pect/cli": "^8.1.0",
+    "@as-tral/cli": "^3.0.2",
+    "@assemblyscript/wasi-shim": "^0.1.0",
+    "as-bench": "^0.0.0-alpha",
+    "assemblyscript": "^0.27.22",
+    "assemblyscript-prettier": "^3.0.1",
+    "benchmark": "^2.1.4",
+    "kati": "^0.6.2",
+    "microtime": "^3.1.1",
+    "prettier": "^3.1.1",
+    "tinybench": "^2.5.1",
+    "typescript": "^5.3.3",
+    "visitor-as": "^0.11.4"
+  },
+  "dependencies": {},
+  "overrides": {
+    "assemblyscript": "$assemblyscript"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JairusSW/fixed.git"
+  },
+  "keywords": [
+    "assemblyscript"
+  ],
+  "bugs": {
+    "url": "https://github.com/JairusSW/fixed/issues"
+  },
+  "homepage": "https://github.com/JairusSW/fixed#readme",
+  "type": "module",
+  "publishConfig": {
+    "@JairusSW:registry": "https://npm.pkg.github.com"
+  }
+}
