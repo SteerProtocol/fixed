@@ -14,12 +14,15 @@ export class Fixed {
   add<T>(x: T): Fixed {
     const f = Fixed.from(x);
     if (this.pt >= f.pt) {
-      if (this.pt === f.pt) {
-        return new Fixed(this.high + f.high, this.low + f.low, this.pt);
+      if (this.pt === f.pt) return new Fixed(this.high + f.high, this.low + f.low, this.pt);
+      const low = this.low + (f.low * (this.pt / f.pt));
+      const pt = this.pt / f.pt;
+      if (low > pt) {
+        return new Fixed(this.high + f.high + (low / this.pt), low % this.pt, this.pt);
       }
-      return new Fixed(this.high + f.high, this.low + (f.low * f.pt), this.pt);
+      return new Fixed(this.high + f.high, low, this.pt);
     } else {
-      return new Fixed(this.high + f.high, f.low + (this.low * this.pt), f.pt);
+      return new Fixed(this.high + f.high, f.low + (this.low * (this.pt / f.pt)), f.pt);
     }
   }
   /**
@@ -30,16 +33,14 @@ export class Fixed {
   sub<T>(x: T): Fixed {
     const f = Fixed.from(x);
     if (this.pt >= f.pt) {
-      if (this.pt === f.pt) {
-        return new Fixed(this.high - f.high, this.low - f.low, this.pt);
-      }
+      if (this.pt === f.pt) return new Fixed(this.high - f.high, this.low - f.low, this.pt);
       const flow = (f.low * f.pt);
       if (this.low < flow) {
-        return new Fixed(this.high - f.high - 1, this.low + (f.low * f.pt), this.pt);
+        return new Fixed(this.high - f.high - 1, this.low + (f.low * (f.pt / this.pt)), this.pt);
       }
-      return new Fixed(this.high - f.high, this.low - (f.low * f.pt), this.pt);
+      return new Fixed(this.high - f.high, this.low - (f.low * (f.pt / this.pt)), this.pt);
     } else {
-      return new Fixed(this.high - f.high, (this.low * this.pt) - f.low, f.pt);
+      return new Fixed(this.high - f.high, (this.low * (this.pt / f.pt)) - f.low, f.pt);
     }
   }
   /**
@@ -83,18 +84,16 @@ export class Fixed {
   */
   mult<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.pt <= f.pt) {
-      if (this.pt === f.pt) return new Fixed(this.high * f.high, this.low * f.low, this.pt);
-      const value = this.high + this.low;
-      return new Fixed(1, 2);
-    } else {
-      const left = this.num //* (this.fixedPoint / f.fixedPoint);
-      console.log("Right: " + f.num.toString());
-      console.log("Left: " + this.num.toString())
-      const digits = decimalCount((this.num / this.pt) * (f.num / f.pt));
-      const prod = left * f.num;
-      return new Fixed(prod, (decimalCount(prod) - digits));
+    if (this.pt === f.pt) {
+      return new Fixed(this.high * f.high, this.low * f.low);
     }
+    const left = (this.high * this.pt) + this.low;
+    const right = (f.high * f.pt) + f.low;
+    const product = left * right;
+    const ratio = get_power(product) / get_power(this.high * f.high);
+    const high = product / ratio;
+    const low = product % ratio;
+    return new Fixed(high, low, ratio);
   }
   /**
    * Calculates the natural log and returns the quantity
@@ -103,40 +102,33 @@ export class Fixed {
   */
   log(x: f64): f64 {
     let result = 0.0;
+    let result_fx = new Fixed(0, 0);
     const term = (x - 1) / (x + 1);
+    const term_fx = new Fixed(u64(x) - 1, 0).div(u64(x) + 1);
+    console.log(`Result: ${result} FX: ${result_fx.toString()}`);
+    console.log(`Term: ${term} FX: ${term_fx.toString()}`);
     let powerTerm = term
+    let powerTerm_fx = term_fx;
     let divisor = 1;
+    let divisor_fx = new Fixed(1, 0);
 
     let lastResult = -0.0;
+    //let lastResult_fx = new Fixed(0, 0, 0); // NaN
     while (true) {
       result += powerTerm / divisor;
+      console.log(`${powerTerm_fx.div(divisor_fx)} === ${powerTerm_fx.div(divisor_fx)}`)
+      result_fx = result_fx.add(powerTerm_fx.div(divisor_fx));
+      console.log(`Result: ${result} FX: ${result_fx}`);
       if (result === lastResult) {
-        console.log("Found accuracy at " + divisor.toString() + " operations");
+        console.log("Found accuracy at " + divisor.toString() + " | " + divisor_fx.toString() + " operations");
         return lastResult * 2;
       }
       powerTerm *= (term * term);
+      //powerTerm_fx = powerTerm_fx.mult(term_fx.mult(term_fx));
       divisor += 2;
+      divisor_fx = divisor_fx.add("2");
       lastResult = result;
-    }
-  }
-  logFixed(x: u64): Fixed {
-    let result = new Fixed(0, 1, 2);
-    const term = Fixed.from(x - 1).div(x + 1);
-    console.log(`Term: ${term.toString()} ${term.pt}`)
-    let powerTerm = term;
-    let divisor = 1;
-
-    let lastResult: Fixed = new Fixed(0, 10000);
-    while (true) {
-      console.log("Divisor: " + divisor.toString());
-      result = result.add(powerTerm.div(divisor));
-      if (result.eq(lastResult)) {
-        console.log("Found accuracy at " + divisor.toString() + " operations");
-        return lastResult.mult(2);
-      }
-      powerTerm = powerTerm.mult(term.mult(term));
-      divisor += 2;
-      lastResult = result;
+      //lastResult_fx = result_fx;
     }
   }
   /**
@@ -210,7 +202,7 @@ export class Fixed {
     let pfix = "";
     let pt = this.pt;
     while ((pt /= 10) > this.low) pfix += "0";
-    return `H: ${this.high} L: ${this.low} V: ${this.high}.${pfix}${this.low}`;
+    return `H: ${this.high} L: ${this.low} F: ${this.pt} V: ${this.high}.${pfix}${this.low}`;
   }
   static from<T>(n: T): Fixed {
     if (n instanceof Fixed) return n;
