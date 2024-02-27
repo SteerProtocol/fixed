@@ -1,5 +1,6 @@
 # Fixed
 
+9:11-11:20 
 Fixed is a TypeScript library for working with fixed-point numbers. It provides functionality for performing arithmetic operations and comparisons on fixed-point numbers with customizable precision.
 
 ### Installation

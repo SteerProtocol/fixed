@@ -1,10 +1,10 @@
 /**
- * Represents a fixed-point number
+ * Represents a fixed-point number up to 128 bits
  */
 export class Fixed {
-  public num: u64;
-  constructor(num: u64, public fixedPoint: u64 = 1, public flipped: i32 = 0) {
-    this.num = num;
+  public num: u64 = 0;
+  constructor(public high: u64, public low: u64, public pt: u64 = 1) {
+    console.log(`High: ${this.high} Low: ${this.low} Pt: ${this.pt}`);
   }
   /**
    * Adds two quantities together to calculate the sum
@@ -13,13 +13,13 @@ export class Fixed {
    */
   add<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.fixedPoint >= f.fixedPoint) {
-      if (this.fixedPoint === f.fixedPoint) {
-        return new Fixed(this.num + f.num, f.fixedPoint);
+    if (this.pt >= f.pt) {
+      if (this.pt === f.pt) {
+        return new Fixed(this.high + f.high, this.low + f.low, this.pt);
       }
-      return new Fixed((f.num * (this.fixedPoint / f.fixedPoint)) + this.num, this.fixedPoint);
+      return new Fixed(this.high + f.high, this.low + (f.low * f.pt), this.pt);
     } else {
-      return new Fixed((this.num * (f.fixedPoint / this.fixedPoint)) + f.num, f.fixedPoint);
+      return new Fixed(this.high + f.high, f.low + (this.low * this.pt), f.pt);
     }
   }
   /**
@@ -29,13 +29,17 @@ export class Fixed {
    */
   sub<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.fixedPoint >= f.fixedPoint) {
-      if (this.fixedPoint === f.fixedPoint) {
-        return new Fixed(this.num - f.num, this.fixedPoint);
+    if (this.pt >= f.pt) {
+      if (this.pt === f.pt) {
+        return new Fixed(this.high - f.high, this.low - f.low, this.pt);
       }
-      return new Fixed(this.num - (f.num * (this.fixedPoint / f.fixedPoint)), this.fixedPoint);
+      const flow = (f.low * f.pt);
+      if (this.low < flow) {
+        return new Fixed(this.high - f.high - 1, this.low + (f.low * f.pt), this.pt);
+      }
+      return new Fixed(this.high - f.high, this.low - (f.low * f.pt), this.pt);
     } else {
-      return new Fixed((this.num * (f.fixedPoint / this.fixedPoint)) - f.num, f.fixedPoint);
+      return new Fixed(this.high - f.high, (this.low * this.pt) - f.low, f.pt);
     }
   }
   /**
@@ -45,23 +49,31 @@ export class Fixed {
   */
   div<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.fixedPoint <= f.fixedPoint) {
-      if (this.fixedPoint === f.fixedPoint) {
-        const lead = (this.num / f.num) / this.fixedPoint;
-        if (!lead) return new Fixed(maximize(this.num) / f.num, this.fixedPoint * 10, true);
-        return new Fixed(maximize(this.num) / f.num, this.fixedPoint);
+    const left: u64 = (this.high * this.pt) + this.low;
+    const right: u64 = (f.high * f.pt) + f.low;
+    const ratio: u64 = expand(left)
+    if (this.pt >= f.pt) {
+      if (this.pt === f.pt) {
+        const value: u64 = left * ratio / right
+        const high = value / ratio;
+        const low = value % ratio;
+        return new Fixed(high, low, get_power(low));
       }
-      const right = this.num * (f.fixedPoint / this.fixedPoint);
-      const lead = (this.num / this.fixedPoint) / (f.num / f.fixedPoint);
-      const digits = decimalCount(lead);
-      const quo = maximize(right) / f.num;
-      console.log(`Lead: ` + lead.toString());
-      return new Fixed(quo, 10 ** (decimalCount(quo) - digits), !lead);
+      const pt_rat: u64 = (this.pt / f.pt);
+      const ratio_rat: u64 = ratio * pt_rat;
+      const value: u64 = left * ratio / right
+      const high = value / ratio_rat;
+      const low = value % ratio_rat;
+      if (high) return new Fixed(high, low, get_power(low));
+      return new Fixed(high, low, get_power(low) * pt_rat);
     } else {
-      const left = this.num * (this.fixedPoint / f.fixedPoint);
-      const digits = decimalCount((this.num / this.fixedPoint) / (f.num / f.fixedPoint));
-      const quo = maximize(left) / f.num;
-      return new Fixed(quo, 10 ** (decimalCount(quo) - digits));
+      const pt_rat: u64 = (f.pt / this.pt);
+      const ratio_rat: u64 = ratio * pt_rat;
+      const value: u64 = left * ratio / right
+      const high = value / ratio_rat;
+      const low = value % ratio_rat;
+      if (high) return new Fixed(high, low, get_power(low));
+      return new Fixed(high, low, get_power(low) * pt_rat);
     }
   }
   /**
@@ -71,17 +83,17 @@ export class Fixed {
   */
   mult<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.fixedPoint <= f.fixedPoint) {
-      if (this.fixedPoint === f.fixedPoint) return new Fixed(this.num * f.num, this.fixedPoint);
-      const right = this.num * (f.fixedPoint / this.fixedPoint);
-      const digits = decimalCount((this.num / this.fixedPoint) * (f.num / f.fixedPoint));
-      const prod = right * f.num;
-      return new Fixed(prod, 10 ** (decimalCount(prod) - digits));
+    if (this.pt <= f.pt) {
+      if (this.pt === f.pt) return new Fixed(this.high * f.high, this.low * f.low, this.pt);
+      const value = this.high + this.low;
+      return new Fixed(1, 2);
     } else {
-      const left = this.num * (this.fixedPoint / f.fixedPoint);
-      const digits = decimalCount((this.num / this.fixedPoint) * (f.num / f.fixedPoint));
+      const left = this.num //* (this.fixedPoint / f.fixedPoint);
+      console.log("Right: " + f.num.toString());
+      console.log("Left: " + this.num.toString())
+      const digits = decimalCount((this.num / this.pt) * (f.num / f.pt));
       const prod = left * f.num;
-      return new Fixed(prod, 10 ** (decimalCount(prod) - digits));
+      return new Fixed(prod, (decimalCount(prod) - digits));
     }
   }
   /**
@@ -108,14 +120,15 @@ export class Fixed {
     }
   }
   logFixed(x: u64): Fixed {
-    let result = new Fixed(0);
+    let result = new Fixed(0, 1, 2);
     const term = Fixed.from(x - 1).div(x + 1);
-    console.log(`Term: ${term.toString()} ${term.fixedPoint}`)
+    console.log(`Term: ${term.toString()} ${term.pt}`)
     let powerTerm = term;
     let divisor = 1;
 
     let lastResult: Fixed = new Fixed(0, 10000);
     while (true) {
+      console.log("Divisor: " + divisor.toString());
       result = result.add(powerTerm.div(divisor));
       if (result.eq(lastResult)) {
         console.log("Found accuracy at " + divisor.toString() + " operations");
@@ -132,10 +145,10 @@ export class Fixed {
    * @returns Fixed
   */
   round(): Fixed {
-    const num = this.num / this.fixedPoint;
+    const num = this.num / this.pt;
     if (num % 10 > 4) this.num = num + 1;
     else this.num = num;
-    this.fixedPoint = 1;
+    this.pt = 1;
     return this;
   }
   /**
@@ -144,8 +157,8 @@ export class Fixed {
    * @returns Fixed
   */
   floor(): Fixed {
-    this.num = this.num / this.fixedPoint;
-    this.fixedPoint = 1;
+    this.num = this.num / this.pt;
+    this.pt = 1;
     return this;
   }
   min<T>(x: T): Fixed {
@@ -171,7 +184,7 @@ export class Fixed {
   */
   eq<T>(x: T): boolean {
     const f = Fixed.from(x);
-    return this.num === f.num && this.fixedPoint === f.fixedPoint;
+    return this.num === f.num && this.pt === f.pt;
   }
   /**
    * Checks for inequality between to Fixeds
@@ -180,7 +193,7 @@ export class Fixed {
   */
   neq<T>(x: T): boolean {
     const f = Fixed.from(x);
-    return this.num !== f.num || this.fixedPoint !== f.fixedPoint;
+    return this.num !== f.num || this.pt !== f.pt;
   }
 
   // Helper function to count leading zeros
@@ -194,133 +207,111 @@ export class Fixed {
     return count;
   }
   toString(): string {
-    const num = this.num.toString();
-    let r = "";
-    if (this.flipped) {
-      return "0." + "0".repeat(i32(decimalCount(this.fixedPoint / 100))) + num;
-    }
-    const place = num.length + 1 - decimalCount(this.fixedPoint);
-    for (let i = 0; i < num.length; i++) {
-      if (i === place) r += ".";
-      r += num.charAt(i);
-    }
-    return r;
+    let pfix = "";
+    let pt = this.pt;
+    while ((pt /= 10) > this.low) pfix += "0";
+    return `H: ${this.high} L: ${this.low} V: ${this.high}.${pfix}${this.low}`;
   }
   static from<T>(n: T): Fixed {
     if (n instanceof Fixed) return n;
     if (isString<T>()) {
+      let high: u64 = 0;
       let start = 0;
       let end = n.length << 1;
       let point = 0;
       let val: u64 = 0;
-      let inversePoint = false;
       for (; start < end; start += 2) {
         const char = load<u16>(changetype<usize>(n) + <usize>start);
         if (char == 46) {
-          point = start + 1;
-        } else if (char !== 48) {
-          if (!inversePoint && point) {
-            inversePoint = true;
-          }
+          point = start + 2;
+          high = val;
+          val = 0;
+        } else {
           val = ((val * 10) + (char - 48));
         }
       }
-      if (point) return new Fixed(val, 10 ** ((end - point) >> 1));
-      return new Fixed(val);
+      if (point) return new Fixed(high, val, 10 ** ((end - point) >> 1));
+      return Fixed.fromNumber(val)
     } else {
-      return new Fixed(n, 1);
+      return Fixed.fromNumber(u64(n), 1);
+    }
+  }
+  static fromNumber(num: u64, fixedPoint: u32 = 1): Fixed {
+    if (fixedPoint === 0) {
+      return new Fixed(num, 0, fixedPoint);
+    } else {
+      const high = num / fixedPoint;
+      return new Fixed(num, num - (high * fixedPoint), fixedPoint);
     }
   }
   @operator("+")
   @inline
-  static __add(a: Fixed, b: Fixed): Fixed {
+  static add(a: Fixed, b: Fixed): Fixed {
     //if (a.multiplier > b.multiplier)
     return a.add(b);
   }
   @operator("-")
   @inline
-  static __sub(a: Fixed, b: Fixed): Fixed {
+  static sub(a: Fixed, b: Fixed): Fixed {
     //if (a.multiplier > b.multiplier)
     return a.sub(b);
   }
   @operator("/")
   @inline
-  static __div(a: Fixed, b: Fixed): Fixed {
+  static div(a: Fixed, b: Fixed): Fixed {
     //if (a.multiplier > b.multiplier)
     return a.div(b);
   }
   @operator("*")
   @inline
-  static __mult(a: Fixed, b: Fixed): Fixed {
+  static mult(a: Fixed, b: Fixed): Fixed {
     //if (a.multiplier > b.multiplier)
     return a.mult(b);
   }
 }
 
-function calcDecimals(x: u64): u64 {
-  if (x > 999999999999999999) return 19
-  if (x > 99999999999999999) return 18
-  if (x > 9999999999999999) return 10000000000000000
-  if (x > 999999999999999) return 1000000000000000
-  if (x > 99999999999999) return 100000000000000
-  if (x > 9999999999999) return 10000000000000
-  if (x > 999999999999) return 1000000000000
-  if (x > 99999999999) return 100000000000
-  if (x > 9999999999) return 10000000000
-  if (x > 999999999) return 1000000000
-  if (x > 99999999) return 100000000
-  if (x > 9999999) return 10000000
-  if (x > 999999) return 1000000
-  if (x > 99999) return 100000
-  if (x > 9999) return 10000
-  if (x > 999) return 1000
-  if (x > 99) return 100
-  if (x > 9) return 10
+function expand(x: u64): u64 {
+  if (x < 10) return 1000000000000000000;
+  if (x < 100) return 100000000000000000;
+  if (x < 1000) return 10000000000000000;
+  if (x < 10000) return 1000000000000000;
+  if (x < 100000) return 100000000000000;
+  if (x < 1000000) return 10000000000000;
+  if (x < 10000000) return 1000000000000;
+  if (x < 100000000) return 100000000000;
+  if (x < 1000000000) return 10000000000;
+  if (x < 10000000000) return 1000000000;
+  if (x < 100000000000) return 100000000;
+  if (x < 1000000000000) return 10000000;
+  if (x < 10000000000000) return 1000000;
+  if (x < 100000000000000) return 100000;
+  if (x < 1000000000000000) return 10000;
+  if (x < 10000000000000000) return 1000;
+  if (x < 100000000000000000) return 100;
+  if (x < 1000000000000000000) return 10;
   return 1;
 }
 
-function maximize(x: u64): u64 {
-  if (x > 999999999999999999) return x;
-  if (x > 99999999999999999) return x * 10;
-  if (x > 9999999999999999) return x * 100;
-  if (x > 999999999999999) return x * 1000;
-  if (x > 99999999999999) return x * 10000;
-  if (x > 9999999999999) return x * 100000;
-  if (x > 999999999999) return x * 1000000;
-  if (x > 99999999999) return x * 10000000;
-  if (x > 9999999999) return x * 100000000;
-  if (x > 999999999) return x * 1000000000;
-  if (x > 99999999) return x * 10000000000;
-  if (x > 9999999) return x * 100000000000;
-  if (x > 999999) return x * 1000000000000;
-  if (x > 99999) return x * 10000000000000;
-  if (x > 9999) return x * 100000000000000;
-  if (x > 999) return x * 1000000000000000;
-  if (x > 99) return x * 10000000000000000;
-  if (x > 9) return x * 100000000000000000;
-  return x * 1000000000000000000;
-}
-
-function minimize(x: u64): u64 {
-  if (x <= 99) return x;
-  if (x <= 999) return x / 10;
-  if (x <= 9990) return x / 1000;
-  if (x <= 99900) return x / 10000;
-  if (x <= 999000) return x / 10000;
-  if (x <= 9990000) return x / 100000;
-  if (x <= 99900000) return x / 1000000;
-  if (x <= 999000000) return x / 10000000;
-  if (x <= 9990000000) return x / 100000000;
-  if (x <= 99900000000) return x / 1000000000;
-  if (x <= 999000000000) return x / 10000000000;
-  if (x <= 9990000000000) return x / 100000000000;
-  if (x <= 99900000000000) return x / 1000000000000;
-  if (x <= 999000000000000) return x / 10000000000000;
-  if (x <= 9990000000000000) return x / 100000000000000;
-  if (x <= 99900000000000000) return x / 1000000000000000;
-  if (x <= 999000000000000000) return x / 10000000000000000;
-  if (x <= 9990000000000000000) return x / 100000000000000000;
-  return x / 1000000000000000000;
+function get_power(x: u64): u64 {
+  if (x < 10) return 10;
+  if (x < 100) return 100;
+  if (x < 1000) return 1000;
+  if (x < 10000) return 10000;
+  if (x < 100000) return 100000;
+  if (x < 1000000) return 1000000;
+  if (x < 10000000) return 10000000;
+  if (x < 100000000) return 100000000;
+  if (x < 1000000000) return 1000000000;
+  if (x < 10000000000) return 10000000000;
+  if (x < 100000000000) return 100000000000;
+  if (x < 1000000000000) return 1000000000000;
+  if (x < 10000000000000) return 10000000000000;
+  if (x < 100000000000000) return 100000000000000;
+  if (x < 1000000000000000) return 1000000000000000;
+  if (x < 10000000000000000) return 10000000000000000;
+  if (x < 100000000000000000) return 100000000000000000;
+  if (x < 1000000000000000000) return 1000000000000000000;
+  return 1;
 }
 
 function decimalCount(x: u64): u64 {
