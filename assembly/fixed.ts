@@ -130,7 +130,7 @@ export class Fixed {
     let result_fx = new Fixed(0, 0, 1);
     const term = (x - 1) / (x + 1);
     const term_fx = Fixed.from(term);
-    console.log(`Term: ${term} FX: ${term_fx.toString()}`);
+    //console.log(`Term: ${term} FX: ${term_fx.toString()}`);
     let powerTerm = term;
     let powerTerm_fx = term_fx;
     let divisor = 1;
@@ -140,11 +140,11 @@ export class Fixed {
       result += powerTerm / divisor;
       result_fx = powerTerm_fx.div(divisor);
       if (i < 10) {
-        console.log(`Result: ${powerTerm / divisor} FX: ${result_fx}`);
+        //console.log(`Result: ${powerTerm / divisor} FX: ${result_fx}`);
         i++;
       }
       if (result === lastResult) {
-        console.log("Found accuracy at " + divisor.toString() + " operations");
+        //console.log("Found accuracy at " + divisor.toString() + " operations");
         return lastResult * 2;
       }
       powerTerm *= (term * term);
@@ -223,7 +223,6 @@ export class Fixed {
   toString(): string {
     let pfix = "";
     let pt = this.mag;
-    console.log(`PT: ${pt} Low: ${this.low}`)
     while ((pt /= 10) > this.low) pfix += "0";
     return `${this.high}.${pfix}${this.low}`;
   }
