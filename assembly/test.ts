@@ -1,9 +1,17 @@
-import { Fixed } from "./math";
+import { Fixed } from "./fixed";
 
-const high = Fixed.from("600.25"); // 1000038055242.1866
-const low = Fixed.from("25.5"); // 1000037713754.5096
+const high = new Fixed(600, 25, 100); //Fixed.from("600.25"); // 1000038055242.1866
+const low = new Fixed(25, 5, 10); //Fixed.from("25.5"); // 1000037713754.5096
 
-const rat = Fixed.from("9").div("11");
+const rat = Fixed.from("0.81");
+
+console.log("(Fixed Point) Add 600.25 and 25.5: " + high.add(low).toString());
+console.log("(Native Math) Add 600.25 and 25.5: " + (600.25 + 25.5).toString());
+
+
+console.log("(Fixed Point) Log10: " + Fixed.log10(153).toString());
+console.log("(Native Math) Log10: " + Math.log10(153).toString());
+
 //const a = Fixed.from("3.41");
 //const b = Fixed.from("5.2");
 
@@ -24,9 +32,13 @@ console.log("(Fixed Point) Log(10): " + high.log(10).toString());
 console.log("(Native Math) Log(10): " + Math.log(10).toString());
 console.log(new Fixed(0, 818181818181818181, 1000000000000000000).add(Fixed.from("2.2")).toString());
 console.log(((9 / 11) + 2.2).toString())*/
-console.log(rat.mult(rat).toString());
-const x: f64 = 9 / 11;
-console.log("0.81 * 0.81: " + (x * x).toString());
+//console.log(rat.mult(rat).toString());
+//console.log("Round: " + rat.round().toString());
+//const x: f64 = 0.8181818181818
+//console.log("0.81 * 0.81: " + (x * x).toString());
+//console.log("(Fixed Point) Log(10): " + high.log(10).toString());
+//console.log("(Native Math) Log(10): " + Math.log(10).toString());
+//console.log(new Fixed(0, 818181818181818181, 1000000000000000000).div(1).toString());
 //console.log("(Fixed Point) LogFixed(10): " + high.logFixed(10).toString());
 //console.log("(Native Math) Log(10): " + Math.log(10).toString());
 //console.log("(Fixed Point) Round(25.5): " + low.round().toString());

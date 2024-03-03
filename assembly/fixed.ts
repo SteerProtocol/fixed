@@ -1,10 +1,14 @@
+@inline const HIGH = offsetof<Fixed>("high");
+@inline const LOW = offsetof<Fixed>("low");
+@inline const MAG = offsetof<Fixed>("mag");
+
 /**
  * Represents a fixed-point number up to 128 bits
  */
 export class Fixed {
   public num: u64 = 0;
-  constructor(public high: u64, public low: u64, public pt: u64 = 1) {
-    console.log(`High: ${this.high} Low: ${this.low} Pt: ${this.pt}`);
+  constructor(public high: u64, public low: u64, public mag: u64 = 1) {
+    //console.log(`High: ${this.high} Low: ${this.low} Pt: ${this.pt}`);
   }
   /**
    * Adds two quantities together to calculate the sum
@@ -13,16 +17,16 @@ export class Fixed {
    */
   add<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.pt >= f.pt) {
-      if (this.pt === f.pt) return new Fixed(this.high + f.high, this.low + f.low, this.pt);
-      const low = this.low + (f.low * (this.pt / f.pt));
-      const pt = this.pt / f.pt;
+    if (this.mag >= f.mag) {
+      if (this.mag === f.mag) return new Fixed(this.high + f.high, this.low + f.low, this.mag);
+      const low = this.low + (f.low * (this.mag / f.mag));
+      const pt = this.mag / f.mag;
       if (low > pt) {
-        return new Fixed(this.high + f.high + (low / this.pt), low % this.pt, this.pt);
+        return new Fixed(this.high + f.high + (low / this.mag), low % this.mag, this.mag);
       }
-      return new Fixed(this.high + f.high, low, this.pt);
+      return new Fixed(this.high + f.high, low, this.mag);
     } else {
-      return new Fixed(this.high + f.high, f.low + (this.low * (this.pt / f.pt)), f.pt);
+      return new Fixed(this.high + f.high, f.low + (this.low * (this.mag / f.mag)), f.mag);
     }
   }
   /**
@@ -32,15 +36,15 @@ export class Fixed {
    */
   sub<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.pt >= f.pt) {
-      if (this.pt === f.pt) return new Fixed(this.high - f.high, this.low - f.low, this.pt);
-      const flow = (f.low * f.pt);
+    if (this.mag >= f.mag) {
+      if (this.mag === f.mag) return new Fixed(this.high - f.high, this.low - f.low, this.mag);
+      const flow = (f.low * f.mag);
       if (this.low < flow) {
-        return new Fixed(this.high - f.high - 1, this.low + (f.low * (f.pt / this.pt)), this.pt);
+        return new Fixed(this.high - f.high - 1, this.low + (f.low * (f.mag / this.mag)), this.mag);
       }
-      return new Fixed(this.high - f.high, this.low - (f.low * (f.pt / this.pt)), this.pt);
+      return new Fixed(this.high - f.high, this.low - (f.low * (f.mag / this.mag)), this.mag);
     } else {
-      return new Fixed(this.high - f.high, (this.low * (this.pt / f.pt)) - f.low, f.pt);
+      return new Fixed(this.high - f.high, (this.low * (this.mag / f.mag)) - f.low, f.mag);
     }
   }
   /**
@@ -50,17 +54,18 @@ export class Fixed {
   */
   div<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    const left: u64 = (this.high * this.pt) + this.low;
-    const right: u64 = (f.high * f.pt) + f.low;
+    if (f.eq(1)) return this;
+    const left: u64 = (this.high * this.mag) + this.low;
+    const right: u64 = (f.high * f.mag) + f.low;
     const ratio: u64 = expand(left)
-    if (this.pt >= f.pt) {
-      if (this.pt === f.pt) {
+    if (this.mag >= f.mag) {
+      if (this.mag === f.mag) {
         const value: u64 = left * ratio / right
         const high = value / ratio;
         const low = value % ratio;
         return new Fixed(high, low, get_power(low));
       }
-      const pt_rat: u64 = (this.pt / f.pt);
+      const pt_rat: u64 = (this.mag / f.mag);
       const ratio_rat: u64 = ratio * pt_rat;
       const value: u64 = left * ratio / right
       const high = value / ratio_rat;
@@ -68,7 +73,7 @@ export class Fixed {
       if (high) return new Fixed(high, low, get_power(low));
       return new Fixed(high, low, get_power(low) * pt_rat);
     } else {
-      const pt_rat: u64 = (f.pt / this.pt);
+      const pt_rat: u64 = (f.mag / this.mag);
       const ratio_rat: u64 = ratio * pt_rat;
       const value: u64 = left * ratio / right
       const high = value / ratio_rat;
@@ -84,16 +89,36 @@ export class Fixed {
   */
   mult<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (this.pt === f.pt) {
+    if (this.mag === f.mag) {
       return new Fixed(this.high * f.high, this.low * f.low);
     }
-    const left = (this.high * this.pt) + this.low;
-    const right = (f.high * f.pt) + f.low;
+    if (!this.high || !f.high) {
+      const left = this.low;
+      const right = f.low;
+      const product = left * right;
+      const ratio = get_power(product) / get_power(this.high * f.high);
+      const high = product / ratio;
+      const low = product % ratio;
+      return new Fixed(high, low, ratio);
+    }
+    const left = (this.high * this.mag) + this.low;
+    const right = (f.high * f.mag) + f.low;
     const product = left * right;
     const ratio = get_power(product) / get_power(this.high * f.high);
     const high = product / ratio;
     const low = product % ratio;
     return new Fixed(high, low, ratio);
+  }
+  /**
+   * Calculates the natural log and returns the quantity as an integer
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  static log10<T>(x: T): Fixed {
+    const f = Fixed.from(x);
+    const v = f.high;
+
+    return new Fixed(log10_32(v), 0, 1);
   }
   /**
    * Calculates the natural log and returns the quantity
@@ -102,33 +127,30 @@ export class Fixed {
   */
   log(x: f64): f64 {
     let result = 0.0;
-    let result_fx = new Fixed(0, 0);
+    let result_fx = new Fixed(0, 0, 1);
     const term = (x - 1) / (x + 1);
-    const term_fx = new Fixed(u64(x) - 1, 0).div(u64(x) + 1);
-    console.log(`Result: ${result} FX: ${result_fx.toString()}`);
+    const term_fx = Fixed.from(term);
     console.log(`Term: ${term} FX: ${term_fx.toString()}`);
-    let powerTerm = term
+    let powerTerm = term;
     let powerTerm_fx = term_fx;
     let divisor = 1;
-    let divisor_fx = new Fixed(1, 0);
-
+    let i = 0;
     let lastResult = -0.0;
-    //let lastResult_fx = new Fixed(0, 0, 0); // NaN
     while (true) {
       result += powerTerm / divisor;
-      console.log(`${powerTerm_fx.div(divisor_fx)} === ${powerTerm_fx.div(divisor_fx)}`)
-      result_fx = result_fx.add(powerTerm_fx.div(divisor_fx));
-      console.log(`Result: ${result} FX: ${result_fx}`);
+      result_fx = powerTerm_fx.div(divisor);
+      if (i < 10) {
+        console.log(`Result: ${powerTerm / divisor} FX: ${result_fx}`);
+        i++;
+      }
       if (result === lastResult) {
-        console.log("Found accuracy at " + divisor.toString() + " | " + divisor_fx.toString() + " operations");
+        console.log("Found accuracy at " + divisor.toString() + " operations");
         return lastResult * 2;
       }
       powerTerm *= (term * term);
-      //powerTerm_fx = powerTerm_fx.mult(term_fx.mult(term_fx));
+      powerTerm_fx = Fixed.from(powerTerm);
       divisor += 2;
-      divisor_fx = divisor_fx.add("2");
       lastResult = result;
-      //lastResult_fx = result_fx;
     }
   }
   /**
@@ -137,10 +159,10 @@ export class Fixed {
    * @returns Fixed
   */
   round(): Fixed {
-    const num = this.num / this.pt;
-    if (num % 10 > 4) this.num = num + 1;
-    else this.num = num;
-    this.pt = 1;
+    const low = this.low / (this.mag / 10);
+    if (low > 4) this.high++;
+    this.low = 0;
+    this.mag = 1;
     return this;
   }
   /**
@@ -149,8 +171,8 @@ export class Fixed {
    * @returns Fixed
   */
   floor(): Fixed {
-    this.num = this.num / this.pt;
-    this.pt = 1;
+    this.num = this.num / this.mag;
+    this.mag = 1;
     return this;
   }
   min<T>(x: T): Fixed {
@@ -176,7 +198,7 @@ export class Fixed {
   */
   eq<T>(x: T): boolean {
     const f = Fixed.from(x);
-    return this.num === f.num && this.pt === f.pt;
+    return this.mag === f.mag && this.high === f.high && this.low === f.low;
   }
   /**
    * Checks for inequality between to Fixeds
@@ -185,7 +207,7 @@ export class Fixed {
   */
   neq<T>(x: T): boolean {
     const f = Fixed.from(x);
-    return this.num !== f.num || this.pt !== f.pt;
+    return this.num !== f.num || this.mag !== f.mag;
   }
 
   // Helper function to count leading zeros
@@ -200,33 +222,30 @@ export class Fixed {
   }
   toString(): string {
     let pfix = "";
-    let pt = this.pt;
+    let pt = this.mag;
+    console.log(`PT: ${pt} Low: ${this.low}`)
     while ((pt /= 10) > this.low) pfix += "0";
-    return `H: ${this.high} L: ${this.low} F: ${this.pt} V: ${this.high}.${pfix}${this.low}`;
+    return `${this.high}.${pfix}${this.low}`;
   }
   static from<T>(n: T): Fixed {
-    if (n instanceof Fixed) return n;
-    if (isString<T>()) {
-      let high: u64 = 0;
-      let start = 0;
-      let end = n.length << 1;
-      let point = 0;
-      let val: u64 = 0;
-      for (; start < end; start += 2) {
-        const char = load<u16>(changetype<usize>(n) + <usize>start);
-        if (char == 46) {
-          point = start + 2;
-          high = val;
-          val = 0;
-        } else {
-          val = ((val * 10) + (char - 48));
-        }
+    const s = n.toString();
+    let high: u64 = 0;
+    let start = 0;
+    let end = s.length << 1;
+    let point = 0;
+    let val: u64 = 0;
+    for (; start < end; start += 2) {
+      const char = load<u16>(changetype<usize>(s) + <usize>start);
+      if (char == 46) {
+        point = start + 2;
+        high = val;
+        val = 0;
+      } else {
+        val = ((val * 10) + (char - 48));
       }
-      if (point) return new Fixed(high, val, 10 ** ((end - point) >> 1));
-      return Fixed.fromNumber(val)
-    } else {
-      return Fixed.fromNumber(u64(n), 1);
     }
+    if (point) return new Fixed(high, val, 10 ** ((end - point) >> 1));
+    return Fixed.fromNumber(val);
   }
   static fromNumber(num: u64, fixedPoint: u32 = 1): Fixed {
     if (fixedPoint === 0) {
@@ -327,4 +346,44 @@ function decimalCount(x: u64): u64 {
   if (x > 99) return 3
   if (x > 9) return 2
   return 1;
+}
+
+@inline function log10_32(x: u64): u64 {
+  switch (true) {
+    case (x >= 1000000000): return 9;
+    case (x >= 100000000): return 8;
+    case (x >= 10000000): return 7;
+    case (x >= 1000000): return 6;
+    case (x >= 100000): return 5;
+    case (x >= 10000): return 4;
+    case (x >= 1000): return 3;
+    case (x >= 100): return 2;
+    case (x >= 10): return 1;
+    default: return 0;
+  }
+}
+
+@inline function log10_64(x: u64): u64 {
+  switch (true) {
+    case (x >= 10000000000000000000): return 19;
+    case (x >= 1000000000000000000): return 18;
+    case (x >= 100000000000000000): return 17;
+    case (x >= 10000000000000000): return 16;
+    case (x >= 1000000000000000): return 15;
+    case (x >= 100000000000000): return 14;
+    case (x >= 10000000000000): return 13;
+    case (x >= 1000000000000): return 12;
+    case (x >= 100000000000): return 11;
+    case (x >= 10000000000): return 10;
+    case (x >= 1000000000): return 9;
+    case (x >= 100000000): return 8;
+    case (x >= 10000000): return 7;
+    case (x >= 1000000): return 6;
+    case (x >= 100000): return 5;
+    case (x >= 10000): return 4;
+    case (x >= 1000): return 3;
+    case (x >= 100): return 2;
+    case (x >= 10): return 1;
+    default: return 0;
+  }
 }
