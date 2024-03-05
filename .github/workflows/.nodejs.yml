@@ -1,0 +1,49 @@
+name: Node.js CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20.5.1"
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: yarn install
+
+      - name: Build Addition Tests
+        run: yarn run build:add
+      
+      - name: Build Subtraction Tests
+        run: yarn run build:sub
+      
+      - name: Build Multiplication Tests
+        run: yarn run build:mult
+
+      - name: Build Division Tests
+        run: yarn run build:div
+
+      - name: Build Logarithm Tests
+        run: yarn run build:log
+
+      - name: Run Addition Tests
+        run: yarn run test --suite add
+
+      - name: Run Subtraction Tests
+        run: yarn run test --suite sub
+
+      - name: Run Multiplication Tests
+        run: yarn run test --suite mult
+
+      - name: Run Division Tests
+        run: yarn run test --suite div
+
+      - name: Run Logarithm Tests
+        run: yarn run test --suite log
