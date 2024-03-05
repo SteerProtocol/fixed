@@ -1,30 +1,10 @@
-@inline const HIGH = offsetof<Fixed>("high");
-@inline const LOW = offsetof<Fixed>("low");
-@inline const MAG = offsetof<Fixed>("mag");
-
-
-const maxDigits: number[] = [
-  0, 0, 0, 0, 1, 1, 1, 2, 2, 2,
-  3, 3, 3, 3, 4, 4, 4, 5, 5, 5,
-  6, 6, 6, 6, 7, 7, 7, 8, 8, 8,
-  9, 9, 9, 9, 10, 10, 10, 11, 11, 11,
-  12
-];
-
-const powers: number[] = [
-  0, 10, 100, 1000, 10000, 100000, 1000000, 10000000,
-  100000000, 1000000000, 10000000000, 100000000000, 1000000000000
-];
-
+import { abs_no_branch } from "./util";
 
 /**
  * Represents a fixed-point number up to 128 bits
  */
 export class Fixed {
-  public num: u64 = 0;
-  constructor(public high: u64, public low: u64, public mag: u64 = 1) {
-    //console.log(`High: ${this.high} Low: ${this.low} Pt: ${this.pt}`);
-  }
+  constructor(public num: i64, public mag: i64 = 1) { }
   /**
    * Adds two quantities together to calculate the sum
    * @param x Number | String | Fixed
@@ -34,251 +14,64 @@ export class Fixed {
     const f = Fixed.from(x);
     if (this.mag >= f.mag) {
       if (this.mag === f.mag) {
-        const low = this.low + f.low;
-        if (low >= this.mag) {
-          return new Fixed(this.high + f.high + 1, low - this.mag, this.mag / 10);
-        }
-        return new Fixed(this.high + f.high, low, this.mag);
+        return new Fixed(this.num + f.num, this.mag);
       }
       const mag = this.mag / f.mag;
-      const low = this.low + (f.low * mag);
-      if (low >= this.mag) {
-        return new Fixed(this.high + f.high + 1, low - this.mag, this.mag);
-      }
-      return new Fixed(this.high + f.high, low, this.mag);
+      return new Fixed(this.num + (f.num * mag), this.mag);
     } else {
       const mag = f.mag / this.mag;
-      const low = f.low + (this.low * mag);
-      if (low >= f.mag) {
-        return new Fixed(this.high + f.high + 1, low - f.mag, f.mag);
-      }
-      return new Fixed(this.high + f.high, low, f.mag);
+      return new Fixed((this.num * mag) + f.num, f.mag);
     }
   }
+
   /**
-   * Subtracts two quantities from each other to calculate the difference
-   * @param x Number | String | Fixed
-   * @returns Fixed
-   */
+ * Subtracts two quantities from each other to calculate the difference
+ * @param x Number | String | Fixed
+ * @returns Fixed
+ */
   sub<T>(x: T): Fixed {
     const f = Fixed.from(x);
     if (this.mag >= f.mag) {
-      if (this.mag === f.mag) return new Fixed(this.high - f.high, this.low - f.low, this.mag);
-      const flow = (f.low * f.mag);
-      if (this.low < flow) {
-        return new Fixed(this.high - f.high - 1, this.low + (f.low * (f.mag / this.mag)), this.mag);
-      }
-      return new Fixed(this.high - f.high, this.low - (f.low * (f.mag / this.mag)), this.mag);
-    } else {
-      return new Fixed(this.high - f.high, (this.low * (this.mag / f.mag)) - f.low, f.mag);
-    }
-  }
-  /**
-   * Divides two quantities together to calculate the quotient
-   * @param x Number | String | Fixed
-   * @returns Fixed
-  */
-  div<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    if (f.eq(1)) return this;
-    const left: u64 = (this.high * this.mag) + this.low;
-    const right: u64 = (f.high * f.mag) + f.low;
-    const ratio: u64 = expand(left)
-    if (this.mag >= f.mag) {
       if (this.mag === f.mag) {
-        const value: u64 = left * ratio / right
-        const high = value / ratio;
-        const low = value % ratio;
-        return new Fixed(high, low, get_power(low));
+        return new Fixed(this.num - f.num, this.mag);
       }
-      const pt_rat: u64 = (this.mag / f.mag);
-      const ratio_rat: u64 = ratio * pt_rat;
-      const value: u64 = left * ratio / right
-      const high = value / ratio_rat;
-      const low = value % ratio_rat;
-      if (high) return new Fixed(high, low, get_power(low));
-      return new Fixed(high, low, get_power(low) * pt_rat);
+      const mag = this.mag / f.mag;
+      return new Fixed(this.num - (f.num * mag), this.mag);
     } else {
-      const pt_rat: u64 = (f.mag / this.mag);
-      const ratio_rat: u64 = ratio * pt_rat;
-      const value: u64 = left * ratio / right
-      const high = value / ratio_rat;
-      const low = value % ratio_rat;
-      if (high) return new Fixed(high, low, get_power(low));
-      return new Fixed(high, low, get_power(low) * pt_rat);
+      const mag = f.mag / this.mag;
+      return new Fixed((this.num * mag) - f.num, f.mag);
     }
-  }
-  /**
-   * Multiplies two quantities together to calculate the product
-   * @param x Number | String | Fixed
-   * @returns Fixed
-  */
-  mult<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    if (this.mag === f.mag) {
-      return new Fixed(this.high * f.high, this.low * f.low);
-    }
-    if (!this.high || !f.high) {
-      const left = this.low;
-      const right = f.low;
-      const product = left * right;
-      const ratio = get_power(product) / get_power(this.high * f.high);
-      const high = product / ratio;
-      const low = product % ratio;
-      return new Fixed(high, low, ratio);
-    }
-    const left = (this.high * this.mag) + this.low;
-    const right = (f.high * f.mag) + f.low;
-    const product = left * right;
-    const ratio = get_power(product) / get_power(this.high * f.high);
-    const high = product / ratio;
-    const low = product % ratio;
-    return new Fixed(high, low, ratio);
-  }
-  /**
-   * Calculates the natural log and returns the quantity as an integer
-   * @param x Number | String | Fixed
-   * @returns Fixed
-  */
-  static log10<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    const v = f.high;
-    if (v < 10000000000) return new Fixed(log10_32(v), 0, 1);
-    else return new Fixed(log10_64(v), 0, 1);
-  }
-  /**
-   * Calculates the natural log and returns the quantity
-   * @param x Number | String | Fixed
-   * @returns Fixed
-  */
-  log(x: f64): f64 {
-    let result = 0.0;
-    let result_fx = new Fixed(0, 0, 1);
-    const term = (x - 1) / (x + 1);
-    const term_fx = Fixed.from(term);
-    //console.log(`Term: ${term} FX: ${term_fx.toString()}`);
-    let powerTerm = term;
-    let powerTerm_fx = term_fx;
-    let divisor = 1;
-    let i = 0;
-    let lastResult = -0.0;
-    while (true) {
-      result += powerTerm / divisor;
-      result_fx = powerTerm_fx.div(divisor);
-      if (i < 10) {
-        //console.log(`Result: ${powerTerm / divisor} FX: ${result_fx}`);
-        i++;
-      }
-      if (result === lastResult) {
-        //console.log("Found accuracy at " + divisor.toString() + " operations");
-        return lastResult * 2;
-      }
-      powerTerm *= (term * term);
-      powerTerm_fx = Fixed.from(powerTerm);
-      divisor += 2;
-      lastResult = result;
-    }
-  }
-  /**
-   * Rounds quantity and returns result
-   * @param x Number | String | Fixed
-   * @returns Fixed
-  */
-  round(): Fixed {
-    const low = this.low / (this.mag / 10);
-    if (low > 4) this.high++;
-    this.low = 0;
-    this.mag = 1;
-    return this;
-  }
-  /**
-   * Floors quantity and returns the result
-   * @param x Number | String | Fixed
-   * @returns Fixed
-  */
-  floor(): Fixed {
-    this.num = this.num / this.mag;
-    this.mag = 1;
-    return this;
-  }
-  min<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    return f;
-  }
-  max<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    return f;
-  }
-  gt<T>(x: T): boolean {
-    const f = Fixed.from(x);
-    return true;
-  }
-  lt<T>(x: T): boolean {
-    const f = Fixed.from(x);
-    return true;
-  }
-  /**
-   * Checks for equality between to Fixeds
-   * @param x Number | String | Fixed
-   * @returns boolean
-  */
-  eq<T>(x: T): boolean {
-    const f = Fixed.from(x);
-    return this.mag === f.mag && this.high === f.high && this.low === f.low;
-  }
-  /**
-   * Checks for inequality between to Fixeds
-   * @param x Number | String | Fixed
-   * @returns boolean
-  */
-  neq<T>(x: T): boolean {
-    const f = Fixed.from(x);
-    return this.num !== f.num || this.mag !== f.mag;
-  }
-
-  // Helper function to count leading zeros
-  clz(x: u32): i32 {
-    if (x == 0) return 32;
-    let count: i32 = 0;
-    while ((x & 0x80000000) == 0) {
-      x <<= 1;
-      count++;
-    }
-    return count;
   }
   toString(): string {
-    let pfix = "";
-    let pt = this.mag;
-    while ((pt /= 10) > this.low) pfix += "0";
-    return `${this.high}.${pfix}${this.low}`;
+    const high = this.num / this.mag;
+    const low = abs_no_branch(this.num % this.mag);
+    let p = "";
+    let mag = get_mag(low);
+    while ((mag *= 10) < this.mag) {
+      p += "0";
+    }
+    if (!high && this.num < 0) return `-${high}.${p}${low}`;
+    return `${high}.${p}${low}`;
   }
   static from<T>(n: T): Fixed {
+    if (n instanceof Fixed) return n;
     const s = n.toString();
-    let high: u64 = 0;
-    let start = 0;
+    const neg = s.charCodeAt(0) === 45 ? true : false;
+    let start = neg ? 2 : 0;
     let end = s.length << 1;
     let point = 0;
-    let val: u64 = 0;
+    let val: i64 = 0;
     for (; start < end; start += 2) {
       const char = load<u16>(changetype<usize>(s) + <usize>start);
       if (char == 46) {
         point = start + 2;
-        high = val;
-        val = 0;
       } else {
         val = ((val * 10) + (char - 48));
       }
     }
-    if (point) return new Fixed(high, val, 10 ** ((end - point) >> 1));
-    return Fixed.fromNumber(val);
-  }
-  static fromNumber(num: u64, fixedPoint: u32 = 1): Fixed {
-    if (fixedPoint === 0) {
-      return new Fixed(num, 0, fixedPoint);
-    } else {
-      const high = num / fixedPoint;
-      return new Fixed(num, num - (high * fixedPoint), fixedPoint);
-    }
+    console.log(`New Fixed - V: ${neg ? -val : val} M: ${10 ** ((end - point) >> 1)}`)
+    if (point) return new Fixed(neg ? -val : val, 10 ** ((end - point) >> 1));
+    return new Fixed(neg ? -val : val, 1);
   }
   @operator("+")
   @inline
@@ -286,27 +79,9 @@ export class Fixed {
     //if (a.multiplier > b.multiplier)
     return a.add(b);
   }
-  @operator("-")
-  @inline
-  static sub(a: Fixed, b: Fixed): Fixed {
-    //if (a.multiplier > b.multiplier)
-    return a.sub(b);
-  }
-  @operator("/")
-  @inline
-  static div(a: Fixed, b: Fixed): Fixed {
-    //if (a.multiplier > b.multiplier)
-    return a.div(b);
-  }
-  @operator("*")
-  @inline
-  static mult(a: Fixed, b: Fixed): Fixed {
-    //if (a.multiplier > b.multiplier)
-    return a.mult(b);
-  }
 }
 
-function expand(x: u64): u64 {
+function expand(x: i64): i64 {
   if (x < 10) return 1000000000000000000;
   if (x < 100) return 100000000000000000;
   if (x < 1000) return 10000000000000000;
@@ -328,7 +103,7 @@ function expand(x: u64): u64 {
   return 1;
 }
 
-function get_power(x: u64): u64 {
+function get_power(x: i64): i64 {
   if (x < 10) return 10;
   if (x < 100) return 100;
   if (x < 1000) return 1000;
@@ -350,7 +125,7 @@ function get_power(x: u64): u64 {
   return 1;
 }
 
-function decimalCount(x: u64): u64 {
+function decimalCount(x: i64): i64 {
   if (x === 0) return 0;
   if (x > 999999999999999999) return 19
   if (x > 99999999999999999) return 18
@@ -373,7 +148,7 @@ function decimalCount(x: u64): u64 {
   return 1;
 }
 
-@inline function log10_32(x: u64): u64 {
+@inline function log10_i32(x: i64): i64 {
   switch (true) {
     case (x >= 1000000000): return 9;
     case (x >= 100000000): return 8;
@@ -388,10 +163,8 @@ function decimalCount(x: u64): u64 {
   }
 }
 
-@inline function log10_64(x: u64): u64 {
+@inline function log10_i64(x: i64): i64 {
   switch (true) {
-    case (x >= 10000000000000000000): return 19;
-    case (x >= 1000000000000000000): return 18;
     case (x >= 100000000000000000): return 17;
     case (x >= 10000000000000000): return 16;
     case (x >= 1000000000000000): return 15;
@@ -410,5 +183,28 @@ function decimalCount(x: u64): u64 {
     case (x >= 100): return 2;
     case (x >= 10): return 1;
     default: return 0;
+  }
+}
+
+function get_mag(x: i64): i64 {
+  switch (true) {
+    case (x >= 100000000000000000): return 100000000000000000;
+    case (x >= 10000000000000000): return 10000000000000000;
+    case (x >= 1000000000000000): return 1000000000000000;
+    case (x >= 100000000000000): return 100000000000000;
+    case (x >= 10000000000000): return 10000000000000;
+    case (x >= 1000000000000): return 1000000000000;
+    case (x >= 100000000000): return 100000000000;
+    case (x >= 10000000000): return 10000000000;
+    case (x >= 1000000000): return 1000000000;
+    case (x >= 100000000): return 100000000;
+    case (x >= 10000000): return 10000000;
+    case (x >= 1000000): return 1000000;
+    case (x >= 100000): return 100000;
+    case (x >= 10000): return 10000;
+    case (x >= 1000): return 1000;
+    case (x >= 100): return 100;
+    case (x >= 10): return 10;
+    default: return 1;
   }
 }

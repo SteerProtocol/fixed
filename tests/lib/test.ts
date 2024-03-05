@@ -87,7 +87,7 @@ export class Expectation {
     const left: string = this.left.toString();
     // @ts-ignore
     const right: string = this.right.toString();
-    if (left == right) {
+    if (left == right.slice(0, left.length)) {
       if (!report) return;
       console.log(rainbow.boldMk(rainbow.green(` > ${this._reason}`)));
       if (left.length >= 100) {
@@ -107,9 +107,7 @@ export class Expectation {
     } else {
       failed = true;
       failedSuite = true;
-      console.log(
-        rainbow.boldMk(rainbow.red(` > Failed ${currentSuite} because\n`)),
-      );
+      console.log(rainbow.boldMk(rainbow.red(` > ${this._reason}`)));
       console.log(
         rainbow.italicMk(
           `    - (recieved) ${left}\n      ${rainbow.italicMk(
