@@ -9,8 +9,9 @@
   ],
   "license": "MIT",
   "scripts": {
-    "test": "node ./tests/test.js --suite add",
+    "test": "node ./tests/test.js --suite add && node ./tests/test.js --suite log",
     "build:add": "asc tests/add.spec.ts --bindings esm -o tests/build/add.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
+    "build:log": "asc tests/log.spec.ts --bindings esm -o tests/build/log.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
     "bench:astral": "astral --optimizeLevel 3 --shrinkLevel 0 --converge --noAssert --uncheckedBehavior never --runtime stub",
     "build:test": "asc assembly/test.ts -o build/test.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --optimizeLevel 0 --shrinkLevel 0 --noAssert --uncheckedBehavior always --runtime stub --textFile build/test.wat",
     "build:bench": "asc bench/benchmark.ts -o bench/benchmark.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --optimizeLevel 3 --shrinkLevel 0 --converge --noAssert --uncheckedBehavior always --runtime stub",

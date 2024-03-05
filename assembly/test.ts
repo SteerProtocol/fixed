@@ -1,5 +1,4 @@
 import { Fixed } from "./fixed";
-
 const high = new Fixed(600, 25, 100); //Fixed.from("600.25"); // 1000038055242.1866
 const low = new Fixed(25, 5, 10); //Fixed.from("25.5"); // 1000037713754.5096
 

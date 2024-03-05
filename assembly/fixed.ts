@@ -2,6 +2,21 @@
 @inline const LOW = offsetof<Fixed>("low");
 @inline const MAG = offsetof<Fixed>("mag");
 
+
+const maxDigits: number[] = [
+  0, 0, 0, 0, 1, 1, 1, 2, 2, 2,
+  3, 3, 3, 3, 4, 4, 4, 5, 5, 5,
+  6, 6, 6, 6, 7, 7, 7, 8, 8, 8,
+  9, 9, 9, 9, 10, 10, 10, 11, 11, 11,
+  12
+];
+
+const powers: number[] = [
+  0, 10, 100, 1000, 10000, 100000, 1000000, 10000000,
+  100000000, 1000000000, 10000000000, 100000000000, 1000000000000
+];
+
+
 /**
  * Represents a fixed-point number up to 128 bits
  */
@@ -18,15 +33,26 @@ export class Fixed {
   add<T>(x: T): Fixed {
     const f = Fixed.from(x);
     if (this.mag >= f.mag) {
-      if (this.mag === f.mag) return new Fixed(this.high + f.high, this.low + f.low, this.mag);
-      const low = this.low + (f.low * (this.mag / f.mag));
-      const pt = this.mag / f.mag;
-      if (low > pt) {
-        return new Fixed(this.high + f.high + (low / this.mag), low % this.mag, this.mag);
+      if (this.mag === f.mag) {
+        const low = this.low + f.low;
+        if (low >= this.mag) {
+          return new Fixed(this.high + f.high + 1, low - this.mag, this.mag / 10);
+        }
+        return new Fixed(this.high + f.high, low, this.mag);
+      }
+      const mag = this.mag / f.mag;
+      const low = this.low + (f.low * mag);
+      if (low >= this.mag) {
+        return new Fixed(this.high + f.high + 1, low - this.mag, this.mag);
       }
       return new Fixed(this.high + f.high, low, this.mag);
     } else {
-      return new Fixed(this.high + f.high, f.low + (this.low * (this.mag / f.mag)), f.mag);
+      const mag = f.mag / this.mag;
+      const low = f.low + (this.low * mag);
+      if (low >= f.mag) {
+        return new Fixed(this.high + f.high + 1, low - f.mag, f.mag);
+      }
+      return new Fixed(this.high + f.high, low, f.mag);
     }
   }
   /**
@@ -117,8 +143,8 @@ export class Fixed {
   static log10<T>(x: T): Fixed {
     const f = Fixed.from(x);
     const v = f.high;
-
-    return new Fixed(log10_32(v), 0, 1);
+    if (v < 10000000000) return new Fixed(log10_32(v), 0, 1);
+    else return new Fixed(log10_64(v), 0, 1);
   }
   /**
    * Calculates the natural log and returns the quantity
