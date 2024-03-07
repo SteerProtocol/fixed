@@ -1,5 +1,3 @@
-import { abs_no_branch } from "./util";
-//                           9223372036854775807
 @inline const I64_MAX: i64 = 100000000000000000;
 /**
  * Represents a fixed-point number up to 64 bits
@@ -60,30 +58,84 @@ export class Fixed {
    */
   div<T>(x: T, mode: i32 = 0): Fixed {
     const f = Fixed.from(x);
-    const high = get_expansion(this.num / this.mag);
-    const expansion = (I64_MAX / high);
-    switch (mode) {
-      case 0: {
-        const result = (this.num * expansion) / f.num;
-        return new Fixed(result, expansion);
-      }
-      case 1: {
-        const result = (this.num * expansion) / f.num;
-        if (result % 10 > 4) {
-          return new Fixed((result / 10) + 1, expansion);
+    if (this.mag >= f.mag) {
+      const mag = this.mag / f.mag;
+      const expansion = I64_MAX / get_expansion(abs(this.num));
+      switch (mode) {
+        case 0: {
+          const result = (this.num * expansion) / f.num;
+          return new Fixed(result, expansion * mag);
         }
-        return new Fixed(result / 10, expansion);
+        case 1: {
+          const result = (this.num * expansion) / f.num;
+          if (result % 10 > 4) {
+            return new Fixed((result / 10) + 1, expansion);
+          }
+          return new Fixed(result / 10, expansion * 10);
+        }
+        case 2: {
+          const result = ((this.num - 1 * expansion) / f.num) + 1;
+          return new Fixed(result, expansion * 10);
+        }
+        case 3: {
+          const result = ((this.num + 1 * expansion) / f.num) - 1;
+          return new Fixed(result, expansion * 10);
+        }
       }
-      case 1: {
-        const result = ((this.num - 1 * expansion) / f.num) + 1;
-        return new Fixed(result, expansion * 10);
+      return unreachable();
+    } else {
+      const mag = f.mag / this.mag;
+      const expansion = I64_MAX / get_expansion(abs(this.num));
+      switch (mode) {
+        case 0: {
+          const result = (this.num * expansion) / f.num;
+          return new Fixed(result, expansion / mag);
+        }
+        case 1: {
+          const result = (this.num * expansion) / f.num;
+          if (result % 10 > 4) {
+            return new Fixed((result / 10) + 1, expansion);
+          }
+          return new Fixed(result / 10, expansion * 10);
+        }
+        case 2: {
+          const result = ((this.num - 1 * expansion) / f.num) + 1;
+          return new Fixed(result, expansion * 10);
+        }
+        case 3: {
+          const result = ((this.num + 1 * expansion) / f.num) - 1;
+          return new Fixed(result, expansion * 10);
+        }
       }
-      case 2: {
-        const result = ((this.num + 1 * expansion) / f.num) - 1;
-        return new Fixed(result, expansion * 10);
-      }
+      return unreachable();
     }
-    return unreachable();
+  }
+  /**
+   * Calculates the natural log and returns the quantity
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  static log(x: f64): Fixed {
+    let result = 0.0;
+    let result_fx = new Fixed(0);
+    const term = (x - 1) / (x + 1);
+    let powerTerm = term
+    let divisor = 1;
+    let lastResult = -0.0;
+    while (true) {
+      result += powerTerm / divisor;
+      result_fx = result_fx.add(powerTerm / divisor);
+      if (result.toString() !== result_fx.toString()) {
+        console.log(`Uh oh! ${result} vs ${result_fx}`);
+      }
+      if (result === lastResult) {
+        console.log("Found accuracy at " + divisor.toString() + " operations");
+        return result_fx.mult(2);
+      }
+      powerTerm *= (term * term);
+      divisor += 2;
+      lastResult = result;
+    }
   }
   /**
    * Calculates the natural log and returns the quantity as an integer
@@ -97,9 +149,9 @@ export class Fixed {
     else return new Fixed(log10_i64(v), 1);
   }
   toString(): string {
-    console.log(`N - ${this.num} M - ${this.mag}`)
+    //console.log(`N - ${this.num} M - ${this.mag}`)
     const high = this.num / this.mag;
-    const low = abs_no_branch(this.num % this.mag);
+    const low = abs(this.num % this.mag);
     let p = "";
     let mag = get_mag(low);
     while ((mag *= 10) < this.mag) {
@@ -124,9 +176,19 @@ export class Fixed {
         val = ((val * 10) + (char - 48));
       }
     }
-    console.log(`Created Fixed Point: N - ${neg ? -val : val} M - ${10 ** ((end - point) >> 1)}`);
-    if (point) return new Fixed(neg ? -val : val, 10 ** ((end - point) >> 1));
-    return new Fixed(neg ? -val : val, 1);
+    //console.log(`Created Fixed Point: N - ${neg ? -val : val} M - ${10 ** ((end - point) >> 1)}`);
+    if (point) {
+      const fx = new Fixed(neg ? -val : val, 10 ** ((end - point) >> 1));
+      if (fx.toString().slice(0, s.length) !== s) {
+        throw new Error(`Expected to equal! FX: ${fx} NM: ${s}`);
+      }
+      return fx;
+    }
+    const fx = new Fixed(neg ? -val : val, 1);
+    if (fx.toString().slice(0, s.length) !== s) {
+      throw new Error(`Expected to equal! FX: ${fx} NM: ${s}`);
+    }
+    return fx;
   }
   @operator("+")
   @inline
@@ -219,3 +281,25 @@ function get_expansion(x: i64): i64 {
   }
 }
 console.log(i64.MAX_VALUE.toString())
+
+function maximize(x: i64): i64 {
+  if (x > 999999999999999999) return 1;
+  if (x > 99999999999999999) return 10;
+  if (x > 9999999999999999) return 100;
+  if (x > 999999999999999) return 1000;
+  if (x > 99999999999999) return 10000;
+  if (x > 9999999999999) return 100000;
+  if (x > 999999999999) return 1000000;
+  if (x > 99999999999) return 10000000;
+  if (x > 9999999999) return 100000000;
+  if (x > 999999999) return 1000000000;
+  if (x > 99999999) return 10000000000;
+  if (x > 9999999) return 100000000000;
+  if (x > 999999) return 1000000000000;
+  if (x > 99999) return 10000000000000;
+  if (x > 9999) return 100000000000000;
+  if (x > 999) return 1000000000000000;
+  if (x > 99) return 10000000000000000;
+  if (x > 9) return 100000000000000000;
+  return 1000000000000000000;
+}

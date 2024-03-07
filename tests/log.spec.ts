@@ -11,4 +11,9 @@ describe("Should Perform Logarithms", () => {
     .toEqual(Math.round(Math.log10(1530000000000)))
     .desc("Log10(1530000000000)")
     .test(true);
+
+  expect(Fixed.log(12))
+    .toEqual(Math.log(12))
+    .desc("Log(12)")
+    .test(true);
 });
