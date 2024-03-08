@@ -1,3 +1,5 @@
+import { MpZ } from "@hypercubed/as-mpz";
+
 @inline const I64_MAX: i64 = 100000000000000000;
 /**
  * Represents a fixed-point number up to 64 bits
@@ -115,24 +117,19 @@ export class Fixed {
    * @param x Number | String | Fixed
    * @returns Fixed
   */
-  static log(x: f64): Fixed {
-    let result = 0.0;
-    let result_fx = new Fixed(0);
-    const term = (x - 1) / (x + 1);
-    let powerTerm = term
+  static log(x: u64, mag: u64 = 1000000000000000000): Fixed {
+    let result: u64 = 0;
+    const term: u64 = ((x - 1) * mag) / (x + 1);
+    const term_mpz = MpZ.from(term).mul(term).div(mag);
+    let powerTerm: u64 = term;
     let divisor = 1;
-    let lastResult = -0.0;
+    let lastResult: u64 = 0;
     while (true) {
       result += powerTerm / divisor;
-      result_fx = result_fx.add(powerTerm / divisor);
-      if (result.toString() !== result_fx.toString()) {
-        console.log(`Uh oh! ${result} vs ${result_fx}`);
-      }
       if (result === lastResult) {
-        console.log("Found accuracy at " + divisor.toString() + " operations");
-        return result_fx.mult(2);
+        return new Fixed(result * 2, mag);
       }
-      powerTerm *= (term * term);
+      powerTerm = MpZ.from(powerTerm).mul(term_mpz).div(mag).toU64();
       divisor += 2;
       lastResult = result;
     }
@@ -162,33 +159,26 @@ export class Fixed {
   }
   static from<T>(n: T): Fixed {
     if (n instanceof Fixed) return n;
-    const s = n.toString();
-    const neg = s.charCodeAt(0) === 45 ? true : false;
-    let start = neg ? 2 : 0;
-    let end = s.length << 1;
-    let point = 0;
-    let val: i64 = 0;
-    for (; start < end; start += 2) {
-      const char = load<u16>(changetype<usize>(s) + <usize>start);
-      if (char == 46) {
-        point = start + 2;
+    if (isString<T>() || isFloat<T>() || isInteger<T>()) {
+      // @ts-ignore
+      const str = n.toString().split(".") as string[];
+      let high = str[0];
+      const neg = high.charCodeAt(0) === 45;
+      if (neg) high = high.slice(1, high.length);
+      if (str.length === 2) {
+        const low = (str[1] || "").slice(0, 6);
+        const mag: u64 = u64(10) ** low.length;
+        let num = (i64.parse(high) * mag) + i64.parse(low);
+        if (str[1].length > 6) {
+          num += i32.parse(str[1].charAt(7)) > 4 ? 1 : 0;
+        }
+        return new Fixed(neg ? -num : num, mag);
       } else {
-        val = ((val * 10) + (char - 48));
+        const num = i64.parse(high)
+        return new Fixed(neg ? -num : num);
       }
     }
-    //console.log(`Created Fixed Point: N - ${neg ? -val : val} M - ${10 ** ((end - point) >> 1)}`);
-    if (point) {
-      const fx = new Fixed(neg ? -val : val, 10 ** ((end - point) >> 1));
-      if (fx.toString().slice(0, s.length) !== s) {
-        throw new Error(`Expected to equal! FX: ${fx} NM: ${s}`);
-      }
-      return fx;
-    }
-    const fx = new Fixed(neg ? -val : val, 1);
-    if (fx.toString().slice(0, s.length) !== s) {
-      throw new Error(`Expected to equal! FX: ${fx} NM: ${s}`);
-    }
-    return fx;
+    return unreachable();
   }
   @operator("+")
   @inline
@@ -303,3 +293,5 @@ function maximize(x: i64): i64 {
   if (x > 9) return 100000000000000000;
   return 1000000000000000000;
 }
+
+console.log(MpZ.from(818181818181818181).mul(669421487603305856).div(1000000000000000000).toString())

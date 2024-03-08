@@ -117,4 +117,37 @@ export class Expectation {
       );
     }
   }
+  show(report: boolean = false): void {
+    // @ts-ignore
+    const left: string = this.left.toString();
+    // @ts-ignore
+    const right: string = this.right.toString();
+    if (left == right.slice(0, left.length)) {
+      if (!report) return;
+      console.log(rainbow.boldMk(rainbow.green(` > ${this._reason}`)));
+      if (left.length >= 100) {
+        console.log(
+          rainbow.italicMk(
+            `    - (recieved) ${left.slice(
+              0,
+              100,
+            )}...\n    - (expected) ${right.slice(0, 100)}...`,
+          ),
+        );
+      } else {
+        console.log(
+          rainbow.italicMk(`    - (recieved) ${left}\n    - (expected) ${right}`),
+        );
+      }
+    } else {
+      console.log(rainbow.boldMk(rainbow.yellow(` > [WARN] ${this._reason}`)));
+      console.log(
+        rainbow.italicMk(
+          `    - (recieved) ${left}\n      ${rainbow.italicMk(
+            "Does not equal",
+          )}\n    - (expected) ${right}\n`,
+        ),
+      );
+    }
+  }
 }

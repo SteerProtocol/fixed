@@ -9,7 +9,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "test": "node ./tests/test.js --suite add && node ./tests/test.js --suite sub && node ./tests/test.js --suite log",
+    "test": "node ./tests/test.js --suite add && node ./tests/test.js --suite sub && node ./tests/test.js --suite mult && node ./tests/test.js --suite div && node ./tests/test.js --suite log",
     "build:add": "asc tests/add.spec.ts --bindings esm -o tests/build/add.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
     "build:sub": "asc tests/sub.spec.ts --bindings esm -o tests/build/sub.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
     "build:mult": "asc tests/mult.spec.ts --bindings esm -o tests/build/mult.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
