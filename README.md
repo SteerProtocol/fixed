@@ -1,6 +1,5 @@
 # Fixed
 
-9:11-11:20 
 Fixed is a TypeScript library for working with fixed-point numbers. It provides functionality for performing arithmetic operations and comparisons on fixed-point numbers with customizable precision.
 
 ### Installation
@@ -19,7 +18,7 @@ Here's how you can use Fixed in your TypeScript code:
 import { Fixed } from "as-fixed";
 
 // Create fixed-point numbers
-const num1 = new Fixed(12345, 2); // 123.45
+const num1 = new Fixed(12345, 100); // 123.45
 const num2 = Fixed.from("67.89");  // 67.89
 
 // Perform arithmetic operations
@@ -46,7 +45,7 @@ const quotient = num1.div(num2);   // 1.819925677
 ### Examples
 
 ```ts
-const num1 = new Fixed(12345, 2);
+const num1 = new Fixed(12345, 100);
 const num2 = Fixed.from("67.89");
 
 const sum = num1.add(num2); // 191.34

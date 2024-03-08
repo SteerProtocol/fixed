@@ -53,5 +53,3 @@ describe("Should Perform Division", () => {
     .desc("-0.5 / 0.55")
     .test(true);//
 });
-
-console.log(Fixed.from("0.0424822990420658").toString());

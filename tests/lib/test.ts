@@ -1,14 +1,6 @@
 import { rainbow } from "as-rainbow/assembly";
 import { Fixed } from "../../assembly/fixed";
 
-
-@external("test", "getSerializedInteger")
-export declare function getSerializedInteger(data: u64, ptr: usize): void;
-
-
-@external("test", "getSerializedBuffer")
-export declare function getSerializedBuffer(data: ArrayBuffer): ArrayBuffer;
-
 let currentSuite = "";
 let failedSuite = false;
 let failed = false;

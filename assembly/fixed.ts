@@ -293,5 +293,3 @@ function maximize(x: i64): i64 {
   if (x > 9) return 100000000000000000;
   return 1000000000000000000;
 }
-
-console.log(MpZ.from(818181818181818181).mul(669421487603305856).div(1000000000000000000).toString())
