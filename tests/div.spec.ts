@@ -26,17 +26,17 @@ describe("Should Perform Division", () => {
   expect(Fixed.from(0.5).div(Fixed.from(0.5)))
     .toEqual(0.5 / 0.5)
     .desc("0.5 / 0.5")
-    .test(true);
+    .show(true);
 
   expect(Fixed.from(0.6).div(Fixed.from(0.5)))
     .toEqual(0.6 / 0.5)
     .desc("0.6 / 0.5")
-    .test(true);
+    .show(true);
 
   expect(Fixed.from(0.55).div(Fixed.from(0.5)))
     .toEqual(0.55 / 0.5)
     .desc("0.55 / 0.5")
-    .test(true);
+    .show(true);
 
   expect(Fixed.from(0.5).div(Fixed.from(0.55)))
     .toEqual(0.5 / 0.55)
@@ -46,7 +46,7 @@ describe("Should Perform Division", () => {
   expect(Fixed.from(-0.55).div(Fixed.from(0.5)))
     .toEqual(-0.55 / 0.5)
     .desc("-0.55 / 0.5")
-    .test(true);
+    .show(true);
 
   expect(Fixed.from(-0.5).div(Fixed.from(0.55)))
     .toEqual(-0.5 / 0.55)

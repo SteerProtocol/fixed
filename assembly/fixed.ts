@@ -50,10 +50,11 @@ export class Fixed {
    */
   mult<T>(x: T): Fixed {
     const f = Fixed.from(x);
+    // May change later. I don't like how mag is done. Can cause overflow.
     return new Fixed(this.num * f.num, this.mag * f.mag);
   }
   /**
-   * Subtracts two quantities from each other to calculate the difference
+   * Divides number by a divisor to calculate the quotient.
    * @param x Number | String | Fixed
    * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
    * @returns Fixed
@@ -113,14 +114,52 @@ export class Fixed {
     }
   }
   /**
+   * Adds two quantities together to calculate the sum
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns Fixed
+   */
+  static add<L, R>(lhs: L, rhs: R): Fixed {
+    return Fixed.from(lhs).add(rhs);
+  }
+  /**
+   * Subtracts two quantities from each other to calculate the difference
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns Fixed
+   */
+  static sub<L, R>(lhs: L, rhs: R): Fixed {
+    return Fixed.from(lhs).sub(rhs);
+  }
+  /**
+   * Multiplies two quantities together to calculate the product
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns Fixed
+   */
+  static mult<L, R>(lhs: L, rhs: R): Fixed {
+    return Fixed.from(lhs).mult(rhs);
+  }
+  /**
+   * Divides divident and divisor to calculate the quotient.
+   * @param dividend Number | String | Fixed
+   * @param divisor Number | String | Fixed
+   * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
+   * @returns Fixed
+   */
+  static div<D, A>(dividend: D, divisor: A): Fixed {
+    return Fixed.from(dividend).div(divisor);
+  }
+  /**
    * Rounds quantity and returns result
    * @param x Number | String | Fixed
    * @returns Fixed
   */
   static round<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (f.mag === 1) return f;
-    const high = f.num / (f.mag / 10);
+    const mag = f.mag;
+    if (mag === 1) return f;
+    const high = f.num / (mag / 10);
     const rem = high % 10;
     if (rem > 4) {
       f.num = (high / 10) + 1;
@@ -139,8 +178,9 @@ export class Fixed {
   */
   static floor<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (f.mag === 1) return f;
-    f.num = f.num / f.mag;
+    const mag = f.mag;
+    if (mag === 1) return f;
+    f.num = f.num / mag;
     f.mag = 1;
     return f;
   }
@@ -151,10 +191,177 @@ export class Fixed {
   */
   static ceil<T>(x: T): Fixed {
     const f = Fixed.from(x);
-    if (f.mag === 1) return f;
-    f.num = (f.num / f.mag) + 1;
+    const mag = f.mag;
+    if (mag === 1) return f;
+    f.num = (f.num / mag) + 1;
     f.mag = 1;
     return f;
+  }
+  /**
+   * Gets the absolute value and returns the result
+   * @param x Number | String | Fixed
+   * @returns Fixed
+   */
+  static abs<T>(x: T): Fixed {
+    const f = Fixed.from(x);
+    f.num = abs(f.num);
+    return f;
+  }
+  /**
+   * Tests for equality and returns the result
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns boolean
+   */
+  static eq<L, R>(lhs: L, rhs: R): boolean {
+    const l = Fixed.from(lhs);
+    const r = Fixed.from(rhs);
+    const l_mag = l.mag;
+    const r_mag = r.mag;
+    if (l_mag !== r_mag) {
+      return false;
+    } else if (l_mag >= r_mag) {
+      if (l_mag === r_mag) {
+        return l.num === r.num;
+      } else {
+        const mag = l_mag / r_mag;
+        return l.num === (r.num * mag);
+      }
+    } else {
+      const mag = r_mag / l_mag;
+      return (l.num * mag) === r.num;
+    }
+  }
+  /**
+ * Tests for inequality and returns the result
+ * @param lhs Number | String | Fixed
+ * @param rhs Number | String | Fixed
+ * @returns boolean
+ */
+  static neq<L, R>(lhs: L, rhs: R): boolean {
+    const l = Fixed.from(lhs);
+    const r = Fixed.from(rhs);
+    const l_mag = l.mag;
+    const r_mag = r.mag;
+    if (l_mag !== r_mag) {
+      return true;
+    } else if (l_mag >= r_mag) {
+      if (l_mag === r_mag) {
+        return l.num !== r.num;
+      } else {
+        const mag = l_mag / r_mag;
+        return l.num !== (r.num * mag);
+      }
+    } else {
+      const mag = r_mag / l_mag;
+      return (l.num * mag) !== r.num;
+    }
+  }
+  /**
+   * Tests if lhs is greater than rhs and returns the result
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns boolean
+   */
+  static gt<L, R>(lhs: L, rhs: R): boolean {
+    const l = Fixed.from(lhs);
+    const r = Fixed.from(rhs);
+    const l_mag = l.mag;
+    const r_mag = r.mag;
+    if (l_mag === r_mag) {
+      return l.num > r.num;
+    } else if (l_mag > r_mag) {
+      const mag = l_mag / r_mag;
+      return l.num > (r.num * mag);
+    } else {
+      const mag = r_mag / l_mag;
+      return (l.num * mag) > r.num;
+    }
+  }
+  /**
+   * Tests if lhs is less than rhs and returns the result
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns boolean
+   */
+  static lt<L, R>(lhs: L, rhs: R): boolean {
+    const l = Fixed.from(lhs);
+    const r = Fixed.from(rhs);
+    const l_mag = l.mag;
+    const r_mag = r.mag;
+    if (l_mag === r_mag) {
+      return l.num < r.num;
+    } else if (l_mag > r_mag) {
+      const mag = l_mag / r_mag;
+      return l.num < (r.num * mag);
+    } else {
+      const mag = r_mag / l_mag;
+      return (l.num * mag) < r.num;
+    }
+  }
+  /**
+   * Raises x to x^pwr and returns the result
+   * Only for integers at the moment
+   * @param x Number | String | Fixed
+   * @param pwr Number | String | Fixed
+   * @returns Fixed
+   */
+  static pow<L, R>(x: L, pwr: R): Fixed {
+    const base = Fixed.from(x);
+    const power = Fixed.from(pwr);
+
+    if (power.num === 0) {
+      return new Fixed(1);
+    } else if (base.num === 0) {
+      return new Fixed(0);
+    } else if (power.num === 1 && power.mag === 1) {
+      return base;
+    } else if (power.mag === 1 && power.num > 0) {
+      let result = base;
+      for (let i: i64 = 1; i < power.num; i++) {
+        result = result.mult(base);
+      }
+      return result;
+    } else if (power.mag === 1 && power.num < 0) {
+      const reciprocalBase = new Fixed(1).div(base);
+      let result = reciprocalBase;
+      for (let i: i64 = 1; i < -power.num; i++) {
+        result = result.mult(reciprocalBase);
+      }
+      return result;
+    }
+    return unreachable();
+  }
+  /**
+   * Calculates the minimum of two numbers and returns the result
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns Fixed
+   */
+  static min<L, R>(lhs: L, rhs: R): Fixed {
+    const l = Fixed.from(lhs);
+    const r = Fixed.from(rhs);
+    if (Fixed.lt(l, r)) {
+      return l;
+    } else {
+      return r;
+    }
+  }
+
+  /**
+   * Calculates the maximum of two numbers and returns the result
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
+   * @returns Fixed
+   */
+  static max<L, R>(lhs: L, rhs: R): Fixed {
+    const l = Fixed.from(lhs);
+    const r = Fixed.from(rhs);
+    if (Fixed.gt(l, r)) {
+      return l;
+    } else {
+      return r;
+    }
   }
   /**
    * Calculates the natural log and returns the quantity
@@ -226,8 +433,48 @@ export class Fixed {
   }
   @operator("+")
   @inline
-  static add(a: Fixed, b: Fixed): Fixed {
+  static _add(a: Fixed, b: Fixed): Fixed {
     return a.add(b);
+  }
+  @operator("-")
+  @inline
+  static _sub(a: Fixed, b: Fixed): Fixed {
+    return a.sub(b);
+  }
+  @operator("*")
+  @inline
+  static _mult(a: Fixed, b: Fixed): Fixed {
+    return a.mult(b);
+  }
+  @operator("/")
+  @inline
+  static _div(a: Fixed, b: Fixed): Fixed {
+    return a.div(b);
+  }
+  @operator("**")
+  @inline
+  static _pow(a: Fixed, b: Fixed): Fixed {
+    return Fixed.pow(a, b);
+  }
+  @operator("==")
+  @inline
+  static _eq(a: Fixed, b: Fixed): boolean {
+    return Fixed.eq(a, b);
+  }
+  @operator("!=")
+  @inline
+  static _neq(a: Fixed, b: Fixed): boolean {
+    return Fixed.eq(a, b);
+  }
+  @operator(">")
+  @inline
+  static _gt(a: Fixed, b: Fixed): boolean {
+    return Fixed.gt(a, b);
+  }
+  @operator("<")
+  @inline
+  static _lt(a: Fixed, b: Fixed): boolean {
+    return Fixed.lt(a, b);
   }
 }
 

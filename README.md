@@ -12,7 +12,7 @@ npm install as-fixed
 
 ### Usage
 
-Here's how you can use Fixed in your TypeScript code:
+Here's how you can use Fixed in your AssemblyScript code:
 
 ```ts
 import { Fixed } from "as-fixed";
@@ -26,32 +26,63 @@ const sum = num1.add(num2);        // 191.34
 const difference = num1.sub(num2); // 55.56
 const product = num1.mult(num2);   // 838201.05
 const quotient = num1.div(num2);   // 1.819925677
+const log = Fixed.log(10); // 2.302585092994046
+
+// You can use operators
+const pow = num1 ** 5;
+if (num1 > num2) {
+  // Do something
+} else if (num1 === num2) {
+  // Do something else
+}
 ```
 
 ### API
 **Constructor**
 
-`Fixed(num: u64, fixedPoint: u64 = 0)`: Creates a new fixed-point number with the specified integer value and fixed-point precision.
+`new Fixed(num: u64, mag: u64 = 0)`
+
+`Fixed.from<T>(x: T): Fixed`
 
 **Methods**
 
-`add(x: T)`: Fixed: Adds two fixed-point numbers together to calculate the sum.
-`sub(x: T)`: Fixed: Subtracts one fixed-point number from another to calculate the difference.
-`div(x: T)`: Fixed: Divides one fixed-point number by another to calculate the quotient.
-`mult(x: T)`: Fixed: Multiplies two fixed-point numbers together to calculate the product.
-`eq(x: T)`: boolean: Checks for equality between two fixed-point numbers.
-`neq(x: T)`: boolean: Checks for inequality between two fixed-point numbers.
+*Operations*
 
-### Examples
+`Fixed.add<L, R>(lhs: L, rhs: R): Fixed`
 
-```ts
-const num1 = new Fixed(12345, 100);
-const num2 = Fixed.from("67.89");
+`Fixed.sub<L, R>(lhs: L, rhs: R): Fixed`
 
-const sum = num1.add(num2); // 191.34
-console.log(sum.num);       // 19134
-console.log(sum.fixedPoint);// 100
-```
+`Fixed.mult<L, R>(lhs: L, rhs: R): Fixed`
+
+`Fixed.div<L, R>(lhs: L, rhs: R): Fixed`
+
+`Fixed.pow<T>(x: T): Fixed`
+
+*Comparisions*
+
+`Fixed.eq<L, R>(lhs: L, rhs: R): boolean`
+
+`Fixed.neq<L, R>(lhs: L, rhs: R): boolean`
+
+`Fixed.gt<L, R>(lhs: L, rhs: R): boolean`
+
+`Fixed.lt<L, R>(lhs: L, rhs: R): boolean`
+
+*Utilities*
+
+`Fixed.round<T>(x: T): Fixed`
+
+`Fixed.floor<T>(x: T): Fixed`
+
+`Fixed.ceil<T>(x: T): Fixed`
+
+`Fixed.max<T>(x: T): Fixed`
+
+`Fixed.min<T>(x: T): Fixed`
+
+`Fixed.log<T>(x: T, mag?: u64): Fixed`
+
+`Fixed.log10<T>(x: T): Fixed`
 
 Contributing
 

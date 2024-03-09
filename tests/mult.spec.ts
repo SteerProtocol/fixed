@@ -31,7 +31,7 @@ describe("Should Perform Multiplication", () => {
   expect(Fixed.from(0.6).mult(Fixed.from(0.5)))
     .toEqual(0.6 * 0.5)
     .desc("0.6 * 0.5")
-    .test(true);
+    .show(true);
 
   expect(Fixed.from(0.55).mult(Fixed.from(0.5)))
     .toEqual(0.55 * 0.5)

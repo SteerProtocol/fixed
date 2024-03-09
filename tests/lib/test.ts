@@ -42,6 +42,10 @@ export function expect<T>(left: T): Expectation {
     // @ts-ignore
     return new Expectation(left.toString());
   }
+  else if (isBoolean<T>()) {
+    // @ts-ignore
+    return new Expectation(left.toString());
+  }
   throw new Error("Expected of type String, Fixed, or Number");
 }
 
@@ -85,7 +89,7 @@ export class Expectation {
       if (left.length >= 100) {
         console.log(
           rainbow.italicMk(
-            `    - (recieved) ${left.slice(
+            `    - (received) ${left.slice(
               0,
               100,
             )}...\n    - (expected) ${right.slice(0, 100)}...`,
@@ -93,7 +97,7 @@ export class Expectation {
         );
       } else {
         console.log(
-          rainbow.italicMk(`    - (recieved) ${left}\n    - (expected) ${right}`),
+          rainbow.italicMk(`    - (received) ${left}\n    - (expected) ${right}`),
         );
       }
     } else {
@@ -102,7 +106,7 @@ export class Expectation {
       console.log(rainbow.boldMk(rainbow.red(` > ${this._reason}`)));
       console.log(
         rainbow.italicMk(
-          `    - (recieved) ${left}\n      ${rainbow.italicMk(
+          `    - (received) ${left}\n      ${rainbow.italicMk(
             "Does not equal",
           )}\n    - (expected) ${right}\n`,
         ),
@@ -120,7 +124,7 @@ export class Expectation {
       if (left.length >= 100) {
         console.log(
           rainbow.italicMk(
-            `    - (recieved) ${left.slice(
+            `    - (received) ${left.slice(
               0,
               100,
             )}...\n    - (expected) ${right.slice(0, 100)}...`,
@@ -128,14 +132,14 @@ export class Expectation {
         );
       } else {
         console.log(
-          rainbow.italicMk(`    - (recieved) ${left}\n    - (expected) ${right}`),
+          rainbow.italicMk(`    - (received) ${left}\n    - (expected) ${right}`),
         );
       }
     } else {
       console.log(rainbow.boldMk(rainbow.yellow(` > [WARN] ${this._reason}`)));
       console.log(
         rainbow.italicMk(
-          `    - (recieved) ${left}\n      ${rainbow.italicMk(
+          `    - (received) ${left}\n      ${rainbow.italicMk(
             "Does not equal",
           )}\n    - (expected) ${right}\n`,
         ),
