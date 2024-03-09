@@ -113,6 +113,50 @@ export class Fixed {
     }
   }
   /**
+   * Rounds quantity and returns result
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  static round<T>(x: T): Fixed {
+    const f = Fixed.from(x);
+    if (f.mag === 1) return f;
+    const high = f.num / (f.mag / 10);
+    const rem = high % 10;
+    if (rem > 4) {
+      f.num = (high / 10) + 1;
+      f.mag = 1;
+      return f;
+    } else {
+      f.num = high / 10;
+      f.mag = 1;
+      return f;
+    }
+  }
+  /**
+   * Floors quantity and returns the result
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  static floor<T>(x: T): Fixed {
+    const f = Fixed.from(x);
+    if (f.mag === 1) return f;
+    f.num = f.num / f.mag;
+    f.mag = 1;
+    return f;
+  }
+  /**
+   * Ceils quantity and returns the result
+   * @param x Number | String | Fixed
+   * @returns Fixed
+  */
+  static ceil<T>(x: T): Fixed {
+    const f = Fixed.from(x);
+    if (f.mag === 1) return f;
+    f.num = (f.num / f.mag) + 1;
+    f.mag = 1;
+    return f;
+  }
+  /**
    * Calculates the natural log and returns the quantity
    * @param x Number | String | Fixed
    * @returns Fixed
