@@ -561,7 +561,6 @@ function get_expansion(x: i64): i64 {
     default: return 10;
   }
 }
-console.log(i64.MAX_VALUE.toString())
 
 function maximize(x: i64): i64 {
   if (x > 999999999999999999) return 1;
