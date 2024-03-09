@@ -417,7 +417,7 @@ export class Fixed {
       const neg = high.charCodeAt(0) === 45;
       if (neg) high = high.slice(1, high.length);
       if (str.length === 2) {
-        const low = (str[1] || "").slice(0, 6);
+        const low = (str[1] || "").slice(0, 16);
         const mag: u64 = u64(10) ** low.length;
         let num = (i64.parse(high) * mag) + i64.parse(low);
         if (str[1].length > 6) {
@@ -560,26 +560,4 @@ function get_expansion(x: i64): i64 {
     case (x >= 10): return 100;
     default: return 10;
   }
-}
-
-function maximize(x: i64): i64 {
-  if (x > 999999999999999999) return 1;
-  if (x > 99999999999999999) return 10;
-  if (x > 9999999999999999) return 100;
-  if (x > 999999999999999) return 1000;
-  if (x > 99999999999999) return 10000;
-  if (x > 9999999999999) return 100000;
-  if (x > 999999999999) return 1000000;
-  if (x > 99999999999) return 10000000;
-  if (x > 9999999999) return 100000000;
-  if (x > 999999999) return 1000000000;
-  if (x > 99999999) return 10000000000;
-  if (x > 9999999) return 100000000000;
-  if (x > 999999) return 1000000000000;
-  if (x > 99999) return 10000000000000;
-  if (x > 9999) return 100000000000000;
-  if (x > 999) return 1000000000000000;
-  if (x > 99) return 10000000000000000;
-  if (x > 9) return 100000000000000000;
-  return 1000000000000000000;
 }
