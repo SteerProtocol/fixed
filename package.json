@@ -44,6 +44,8 @@
   },
   "dependencies": {
     "@hypercubed/as-mpz": "^2.2.0",
+    "as-bigint": "^0.5.3",
+    "as-bignum": "^0.3.0",
     "as-rainbow": "^0.1.0"
   },
   "overrides": {

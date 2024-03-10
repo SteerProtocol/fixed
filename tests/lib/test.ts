@@ -1,5 +1,5 @@
 import { rainbow } from "as-rainbow/assembly";
-import { Fixed } from "../../assembly/fixed";
+import { Fixed64 } from "../../assembly/fixed64";
 
 let currentSuite = "";
 let failedSuite = false;
@@ -36,7 +36,7 @@ export function describe(suiteName: string, test: () => void): void {
 
 export function expect<T>(left: T): Expectation {
   if (isString<T>()) return new Expectation(<string>left);
-  else if (left instanceof Fixed)
+  else if (left instanceof Fixed64)
     return new Expectation(left.toString());
   else if (isInteger<T>() || isFloat<T>()) {
     // @ts-ignore
@@ -68,7 +68,7 @@ export class Expectation {
   }
   toEqual<T>(right: T): Expectation {
     if (isString<T>()) this.right = <string>right;
-    else if (right instanceof Fixed)
+    else if (right instanceof Fixed64)
       this.right = right.toString();
     // @ts-ignore
     else if (isInteger<T>() || isFloat<T>()) this.right = right.toString();

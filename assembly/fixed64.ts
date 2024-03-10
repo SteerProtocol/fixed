@@ -1,144 +1,63 @@
 import { MpZ } from "@hypercubed/as-mpz";
 
+// @ts-ignore
 @inline const I64_MAX: i64 = 100000000000000000;
 /**
  * Represents a fixed-point number up to 64 bits
  */
-export class Fixed {
+export class Fixed64 {
   constructor(public num: i64, public mag: i64 = 1) { }
   /**
    * Adds two quantities together to calculate the sum
-   * @param x Number | String | Fixed
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
    * @returns Fixed
    */
-  add<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    if (this.mag >= f.mag) {
-      if (this.mag === f.mag) {
-        return new Fixed(this.num + f.num, this.mag);
+  static add<L, R>(lhs: L, rhs: R): Fixed64 {
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
+    if (l.mag >= r.mag) {
+      if (l.mag === r.mag) {
+        return new Fixed64(l.num + r.num, l.mag);
       }
-      const mag = this.mag / f.mag;
-      return new Fixed(this.num + (f.num * mag), this.mag);
+      const mag = l.mag / r.mag;
+      return new Fixed64(l.num + (r.num * mag), l.mag);
     } else {
-      const mag = f.mag / this.mag;
-      return new Fixed((this.num * mag) + f.num, f.mag);
+      const mag = r.mag / l.mag;
+      return new Fixed64((l.num * mag) + r.num, r.mag);
     }
   }
-
   /**
    * Subtracts two quantities from each other to calculate the difference
-   * @param x Number | String | Fixed
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
    * @returns Fixed
    */
-  sub<T>(x: T): Fixed {
-    const f = Fixed.from(x);
-    if (this.mag >= f.mag) {
-      if (this.mag === f.mag) {
-        return new Fixed(this.num - f.num, this.mag);
+  static sub<L, R>(lhs: L, rhs: R): Fixed64 {
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
+    if (l.mag >= r.mag) {
+      if (l.mag === r.mag) {
+        return new Fixed64(l.num - r.num, l.mag);
       }
-      const mag = this.mag / f.mag;
-      return new Fixed(this.num - (f.num * mag), this.mag);
+      const mag = l.mag / r.mag;
+      return new Fixed64(l.num - (r.num * mag), l.mag);
     } else {
-      const mag = f.mag / this.mag;
-      return new Fixed((this.num * mag) - f.num, f.mag);
+      const mag = r.mag / l.mag;
+      return new Fixed64((l.num * mag) - r.num, r.mag);
     }
   }
   /**
    * Multiplies two quantities together to calculate the product
-   * @param x Number | String | Fixed
+   * @param lhs Number | String | Fixed
+   * @param rhs Number | String | Fixed
    * @returns Fixed
    */
-  mult<T>(x: T): Fixed {
-    const f = Fixed.from(x);
+  static mult<L, R>(lhs: L, rhs: R): Fixed64 {
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
     // May change later. I don't like how mag is done. Can cause overflow.
-    return new Fixed(this.num * f.num, this.mag * f.mag);
-  }
-  /**
-   * Divides number by a divisor to calculate the quotient.
-   * @param x Number | String | Fixed
-   * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
-   * @returns Fixed
-   */
-  div<T>(x: T, mode: i32 = 0): Fixed {
-    const f = Fixed.from(x);
-    if (this.mag >= f.mag) {
-      const mag = this.mag / f.mag;
-      const expansion = I64_MAX / get_expansion(abs(this.num));
-      switch (mode) {
-        case 0: {
-          const result = (this.num * expansion) / f.num;
-          return new Fixed(result, expansion * mag);
-        }
-        case 1: {
-          const result = (this.num * expansion) / f.num;
-          if (result % 10 > 4) {
-            return new Fixed((result / 10) + 1, expansion);
-          }
-          return new Fixed(result / 10, expansion * 10);
-        }
-        case 2: {
-          const result = ((this.num - 1 * expansion) / f.num) + 1;
-          return new Fixed(result, expansion * 10);
-        }
-        case 3: {
-          const result = ((this.num + 1 * expansion) / f.num) - 1;
-          return new Fixed(result, expansion * 10);
-        }
-      }
-      return unreachable();
-    } else {
-      const mag = f.mag / this.mag;
-      const expansion = I64_MAX / get_expansion(abs(this.num));
-      switch (mode) {
-        case 0: {
-          const result = (this.num * expansion) / f.num;
-          return new Fixed(result, expansion / mag);
-        }
-        case 1: {
-          const result = (this.num * expansion) / f.num;
-          if (result % 10 > 4) {
-            return new Fixed((result / 10) + 1, expansion);
-          }
-          return new Fixed(result / 10, expansion * 10);
-        }
-        case 2: {
-          const result = ((this.num - 1 * expansion) / f.num) + 1;
-          return new Fixed(result, expansion * 10);
-        }
-        case 3: {
-          const result = ((this.num + 1 * expansion) / f.num) - 1;
-          return new Fixed(result, expansion * 10);
-        }
-      }
-      return unreachable();
-    }
-  }
-  /**
-   * Adds two quantities together to calculate the sum
-   * @param lhs Number | String | Fixed
-   * @param rhs Number | String | Fixed
-   * @returns Fixed
-   */
-  static add<L, R>(lhs: L, rhs: R): Fixed {
-    return Fixed.from(lhs).add(rhs);
-  }
-  /**
-   * Subtracts two quantities from each other to calculate the difference
-   * @param lhs Number | String | Fixed
-   * @param rhs Number | String | Fixed
-   * @returns Fixed
-   */
-  static sub<L, R>(lhs: L, rhs: R): Fixed {
-    return Fixed.from(lhs).sub(rhs);
-  }
-  /**
-   * Multiplies two quantities together to calculate the product
-   * @param lhs Number | String | Fixed
-   * @param rhs Number | String | Fixed
-   * @returns Fixed
-   */
-  static mult<L, R>(lhs: L, rhs: R): Fixed {
-    return Fixed.from(lhs).mult(rhs);
+    return new Fixed64(l.num * r.num, l.mag * r.mag);
   }
   /**
    * Divides divident and divisor to calculate the quotient.
@@ -147,16 +66,68 @@ export class Fixed {
    * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
    * @returns Fixed
    */
-  static div<D, A>(dividend: D, divisor: A): Fixed {
-    return Fixed.from(dividend).div(divisor);
+  static div<D, A>(dividend: D, divisor: A, mode: i32 = 0): Fixed64 {
+    const divd = Fixed64.from(dividend);
+    const divr = Fixed64.from(divisor);
+    if (divd.mag >= divr.mag) {
+      const mag = divd.mag / divr.mag;
+      const expansion = I64_MAX / get_expansion(abs(divd.num));
+      switch (mode) {
+        case 0: {
+          const result = (divd.num * expansion) / divr.num;
+          return new Fixed64(result, expansion * mag);
+        }
+        case 1: {
+          const result = (divd.num * expansion) / divr.num;
+          if (result % 10 > 4) {
+            return new Fixed64((result / 10) + 1, expansion);
+          }
+          return new Fixed64(result / 10, expansion * 10);
+        }
+        case 2: {
+          const result = ((divd.num - 1 * expansion) / divr.num) + 1;
+          return new Fixed64(result, expansion * 10);
+        }
+        case 3: {
+          const result = ((divd.num + 1 * expansion) / divr.num) - 1;
+          return new Fixed64(result, expansion * 10);
+        }
+      }
+      return unreachable();
+    } else {
+      const mag = divr.mag / divd.mag;
+      const expansion = I64_MAX / get_expansion(abs(divd.num));
+      switch (mode) {
+        case 0: {
+          const result = (divd.num * expansion) / divr.num;
+          return new Fixed64(result, expansion / mag);
+        }
+        case 1: {
+          const result = (divd.num * expansion) / divr.num;
+          if (result % 10 > 4) {
+            return new Fixed64((result / 10) + 1, expansion);
+          }
+          return new Fixed64(result / 10, expansion * 10);
+        }
+        case 2: {
+          const result = ((divd.num - 1 * expansion) / divr.num) + 1;
+          return new Fixed64(result, expansion * 10);
+        }
+        case 3: {
+          const result = ((divd.num + 1 * expansion) / divr.num) - 1;
+          return new Fixed64(result, expansion * 10);
+        }
+      }
+      return unreachable();
+    }
   }
   /**
    * Rounds quantity and returns result
    * @param x Number | String | Fixed
    * @returns Fixed
   */
-  static round<T>(x: T): Fixed {
-    const f = Fixed.from(x);
+  static round<T>(x: T): Fixed64 {
+    const f = Fixed64.from(x);
     const mag = f.mag;
     if (mag === 1) return f;
     const high = f.num / (mag / 10);
@@ -176,8 +147,8 @@ export class Fixed {
    * @param x Number | String | Fixed
    * @returns Fixed
   */
-  static floor<T>(x: T): Fixed {
-    const f = Fixed.from(x);
+  static floor<T>(x: T): Fixed64 {
+    const f = Fixed64.from(x);
     const mag = f.mag;
     if (mag === 1) return f;
     f.num = f.num / mag;
@@ -189,8 +160,8 @@ export class Fixed {
    * @param x Number | String | Fixed
    * @returns Fixed
   */
-  static ceil<T>(x: T): Fixed {
-    const f = Fixed.from(x);
+  static ceil<T>(x: T): Fixed64 {
+    const f = Fixed64.from(x);
     const mag = f.mag;
     if (mag === 1) return f;
     f.num = (f.num / mag) + 1;
@@ -202,8 +173,8 @@ export class Fixed {
    * @param x Number | String | Fixed
    * @returns Fixed
    */
-  static abs<T>(x: T): Fixed {
-    const f = Fixed.from(x);
+  static abs<T>(x: T): Fixed64 {
+    const f = Fixed64.from(x);
     f.num = abs(f.num);
     return f;
   }
@@ -214,8 +185,8 @@ export class Fixed {
    * @returns boolean
    */
   static eq<L, R>(lhs: L, rhs: R): boolean {
-    const l = Fixed.from(lhs);
-    const r = Fixed.from(rhs);
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
     const l_mag = l.mag;
     const r_mag = r.mag;
     if (l_mag !== r_mag) {
@@ -239,8 +210,8 @@ export class Fixed {
  * @returns boolean
  */
   static neq<L, R>(lhs: L, rhs: R): boolean {
-    const l = Fixed.from(lhs);
-    const r = Fixed.from(rhs);
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
     const l_mag = l.mag;
     const r_mag = r.mag;
     if (l_mag !== r_mag) {
@@ -264,8 +235,8 @@ export class Fixed {
    * @returns boolean
    */
   static gt<L, R>(lhs: L, rhs: R): boolean {
-    const l = Fixed.from(lhs);
-    const r = Fixed.from(rhs);
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
     const l_mag = l.mag;
     const r_mag = r.mag;
     if (l_mag === r_mag) {
@@ -285,8 +256,8 @@ export class Fixed {
    * @returns boolean
    */
   static lt<L, R>(lhs: L, rhs: R): boolean {
-    const l = Fixed.from(lhs);
-    const r = Fixed.from(rhs);
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
     const l_mag = l.mag;
     const r_mag = r.mag;
     if (l_mag === r_mag) {
@@ -306,27 +277,27 @@ export class Fixed {
    * @param pwr Number | String | Fixed
    * @returns Fixed
    */
-  static pow<L, R>(x: L, pwr: R): Fixed {
-    const base = Fixed.from(x);
-    const power = Fixed.from(pwr);
+  static pow<L, R>(x: L, pwr: R): Fixed64 {
+    const base = Fixed64.from(x);
+    const power = Fixed64.from(pwr);
 
     if (power.num === 0) {
-      return new Fixed(1);
+      return new Fixed64(1);
     } else if (base.num === 0) {
-      return new Fixed(0);
+      return new Fixed64(0);
     } else if (power.num === 1 && power.mag === 1) {
       return base;
     } else if (power.mag === 1 && power.num > 0) {
       let result = base;
       for (let i: i64 = 1; i < power.num; i++) {
-        result = result.mult(base);
+        result = Fixed64.mult(result, base);
       }
       return result;
     } else if (power.mag === 1 && power.num < 0) {
-      const reciprocalBase = new Fixed(1).div(base);
+      const reciprocalBase = Fixed64.div(1, base);
       let result = reciprocalBase;
       for (let i: i64 = 1; i < -power.num; i++) {
-        result = result.mult(reciprocalBase);
+        result = Fixed64.mult(result, reciprocalBase);
       }
       return result;
     }
@@ -338,10 +309,10 @@ export class Fixed {
    * @param rhs Number | String | Fixed
    * @returns Fixed
    */
-  static min<L, R>(lhs: L, rhs: R): Fixed {
-    const l = Fixed.from(lhs);
-    const r = Fixed.from(rhs);
-    if (Fixed.lt(l, r)) {
+  static min<L, R>(lhs: L, rhs: R): Fixed64 {
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
+    if (Fixed64.lt(l, r)) {
       return l;
     } else {
       return r;
@@ -354,10 +325,10 @@ export class Fixed {
    * @param rhs Number | String | Fixed
    * @returns Fixed
    */
-  static max<L, R>(lhs: L, rhs: R): Fixed {
-    const l = Fixed.from(lhs);
-    const r = Fixed.from(rhs);
-    if (Fixed.gt(l, r)) {
+  static max<L, R>(lhs: L, rhs: R): Fixed64 {
+    const l = Fixed64.from(lhs);
+    const r = Fixed64.from(rhs);
+    if (Fixed64.gt(l, r)) {
       return l;
     } else {
       return r;
@@ -368,7 +339,7 @@ export class Fixed {
    * @param x Number | String | Fixed
    * @returns Fixed
   */
-  static log(x: u64, mag: u64 = 1000000000000000000): Fixed {
+  static log(x: u64, mag: u64 = 1000000000000000000): Fixed64 {
     let result: u64 = 0;
     const term: u64 = ((x - 1) * mag) / (x + 1);
     const term_mpz = MpZ.from(term).mul(term).div(mag);
@@ -378,7 +349,7 @@ export class Fixed {
     while (true) {
       result += powerTerm / divisor;
       if (result === lastResult) {
-        return new Fixed(result * 2, mag);
+        return new Fixed64(result * 2, mag);
       }
       powerTerm = MpZ.from(powerTerm).mul(term_mpz).div(mag).toU64();
       divisor += 2;
@@ -390,11 +361,11 @@ export class Fixed {
    * @param x Number | String | Fixed
    * @returns Fixed
   */
-  static log10<T>(x: T): Fixed {
-    const f = Fixed.from(x);
+  static log10<T>(x: T): Fixed64 {
+    const f = Fixed64.from(x);
     const v = f.num / f.mag;
-    if (v < 10000000000) return new Fixed(log10_i32(v), 1);
-    else return new Fixed(log10_i64(v), 1);
+    if (v < 10000000000) return new Fixed64(log10_i32(v), 1);
+    else return new Fixed64(log10_i64(v), 1);
   }
   toString(): string {
     //console.log(`N - ${this.num} M - ${this.mag}`)
@@ -408,8 +379,8 @@ export class Fixed {
     if (!high && this.num < 0) return `-${high}.${p}${low}`;
     return `${high}.${p}${low}`;
   }
-  static from<T>(n: T): Fixed {
-    if (n instanceof Fixed) return n;
+  static from<T>(n: T): Fixed64 {
+    if (n instanceof Fixed64) return n;
     if (isString<T>() || isFloat<T>() || isInteger<T>()) {
       // @ts-ignore
       const str = n.toString().split(".") as string[];
@@ -423,61 +394,62 @@ export class Fixed {
         if (str[1].length > 6) {
           num += i32.parse(str[1].charAt(7)) > 4 ? 1 : 0;
         }
-        return new Fixed(neg ? -num : num, mag);
+        return new Fixed64(neg ? -num : num, mag);
       } else {
         const num = i64.parse(high)
-        return new Fixed(neg ? -num : num);
+        return new Fixed64(neg ? -num : num);
       }
     }
     return unreachable();
   }
   @operator("+")
   @inline
-  static _add(a: Fixed, b: Fixed): Fixed {
-    return a.add(b);
+  static _add(a: Fixed64, b: Fixed64): Fixed64 {
+    return Fixed64.add(a, b);
   }
   @operator("-")
   @inline
-  static _sub(a: Fixed, b: Fixed): Fixed {
-    return a.sub(b);
+  static _sub(a: Fixed64, b: Fixed64): Fixed64 {
+    return Fixed64.sub(a, b);
   }
   @operator("*")
   @inline
-  static _mult(a: Fixed, b: Fixed): Fixed {
-    return a.mult(b);
+  static _mult(a: Fixed64, b: Fixed64): Fixed64 {
+    return Fixed64.mult(a, b);
   }
   @operator("/")
   @inline
-  static _div(a: Fixed, b: Fixed): Fixed {
-    return a.div(b);
+  static _div(a: Fixed64, b: Fixed64): Fixed64 {
+    return Fixed64.div(a, b);
   }
   @operator("**")
   @inline
-  static _pow(a: Fixed, b: Fixed): Fixed {
-    return Fixed.pow(a, b);
+  static _pow(a: Fixed64, b: Fixed64): Fixed64 {
+    return Fixed64.pow(a, b);
   }
   @operator("==")
   @inline
-  static _eq(a: Fixed, b: Fixed): boolean {
-    return Fixed.eq(a, b);
+  static _eq(a: Fixed64, b: Fixed64): boolean {
+    return Fixed64.eq(a, b);
   }
   @operator("!=")
   @inline
-  static _neq(a: Fixed, b: Fixed): boolean {
-    return Fixed.eq(a, b);
+  static _neq(a: Fixed64, b: Fixed64): boolean {
+    return Fixed64.eq(a, b);
   }
   @operator(">")
   @inline
-  static _gt(a: Fixed, b: Fixed): boolean {
-    return Fixed.gt(a, b);
+  static _gt(a: Fixed64, b: Fixed64): boolean {
+    return Fixed64.gt(a, b);
   }
   @operator("<")
   @inline
-  static _lt(a: Fixed, b: Fixed): boolean {
-    return Fixed.lt(a, b);
+  static _lt(a: Fixed64, b: Fixed64): boolean {
+    return Fixed64.lt(a, b);
   }
 }
 
+// @ts-ignore
 @inline function log10_i32(x: i64): i64 {
   switch (true) {
     case (x >= 1000000000): return 9;
@@ -493,6 +465,7 @@ export class Fixed {
   }
 }
 
+// @ts-ignore
 @inline function log10_i64(x: i64): i64 {
   switch (true) {
     case (x >= 100000000000000000): return 17;
