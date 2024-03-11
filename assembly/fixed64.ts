@@ -60,6 +60,27 @@ export class Fixed64 {
     return new Fixed64(l.num * r.num, l.mag * r.mag);
   }
   /**
+   * Divides divident and divisor to calculate the quotient without accuracy
+   * @param dividend Number | String | Fixed
+   * @param divisor Number | String | Fixed
+   * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
+   * @returns Fixed
+   */
+  static divi<D, A>(dividend: D, divisor: A, mode: i32 = 0): Fixed64 {
+    const l = Fixed64.from(dividend);
+    const r = Fixed64.from(divisor);
+    console.log(`LN: ${l.num} LM: ${l.mag} RN: ${r.num} RM: ${r.mag}`)
+    if (l.mag >= r.mag) {
+      const expansion = 100;
+      const result = (l.num * expansion) / r.num;
+      return new Fixed64(result, expansion);
+    } else {
+      const expansion = 100;
+      const result = (l.num * expansion) / r.num;
+      return new Fixed64(result, expansion);
+    }
+  }
+  /**
    * Divides divident and divisor to calculate the quotient.
    * @param dividend Number | String | Fixed
    * @param divisor Number | String | Fixed
