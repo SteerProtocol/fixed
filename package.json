@@ -11,6 +11,7 @@
   "scripts": {
     "test": "node ./tests/test.js --suite add && node ./tests/test.js --suite sub && node ./tests/test.js --suite mult && node ./tests/test.js --suite div && node ./tests/test.js --suite log && node ./tests/test.js --suite methods",
     "build:add": "asc tests/add.spec.ts --bindings esm -o tests/build/add.spec.wasm --textFile tests/build/add.spec.wat --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
+    "build:add.128": "asc tests/add.128.spec.ts --bindings esm -o tests/build/add.128.spec.wasm --textFile tests/build/add.128.spec.wat --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
     "build:sub": "asc tests/sub.spec.ts --bindings esm -o tests/build/sub.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
     "build:mult": "asc tests/mult.spec.ts --bindings esm -o tests/build/mult.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",
     "build:div": "asc tests/div.spec.ts --bindings esm -o tests/build/div.spec.wasm --config ./node_modules/@assemblyscript/wasi-shim/asconfig.json --exportRuntime --runtime stub",

@@ -66,18 +66,16 @@ export class Fixed64 {
    * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
    * @returns Fixed
    */
-  static divi<D, A>(dividend: D, divisor: A, mode: i32 = 0): Fixed64 {
+  static divi<D, A>(dividend: D, divisor: A, precision: u64 = 100): Fixed64 {
     const l = Fixed64.from(dividend);
     const r = Fixed64.from(divisor);
     console.log(`LN: ${l.num} LM: ${l.mag} RN: ${r.num} RM: ${r.mag}`)
     if (l.mag >= r.mag) {
-      const expansion = 100;
-      const result = (l.num * expansion) / r.num;
-      return new Fixed64(result, expansion);
+      const result = (l.num * precision) / r.num;
+      return new Fixed64(result, precision);
     } else {
-      const expansion = 100;
-      const result = (l.num * expansion) / r.num;
-      return new Fixed64(result, expansion);
+      const result = (l.num * precision) / r.num;
+      return new Fixed64(result, precision);
     }
   }
   /**

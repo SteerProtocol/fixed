@@ -34,9 +34,10 @@ export class Fixed128 {
       const r_low = (r.low * mag);
       const low = l.low + r_low;
       const overflow = low >= l.mag;
+      console.log(`Overflow: ${overflow} ${low} ${l.mag}`)
       if (overflow) {
         const high = l.high + r.high + 1;
-        return new Fixed128(high, low % r.mag, l.mag / 10);
+        return new Fixed128(high, low % r.mag, l.mag);
       } else {
         const high = l.high + r.high;
         return new Fixed128(high, low, l.mag);
@@ -47,7 +48,7 @@ export class Fixed128 {
       const overflow = low >= r.mag;
       if (overflow) {
         const high = l.high + r.high + 1;
-        return new Fixed128(high, low % r.mag, r.mag / 10);
+        return new Fixed128(high, low % r.mag, r.mag);
       } else {
         const high = l.high + r.high;
         return new Fixed128(high, low, r.mag);
@@ -105,8 +106,14 @@ export class Fixed128 {
     }
   }
   toString(): string {
+    const low = abs(this.low);
+    let mag = get_mag(low);
+    let p = "";
+    while ((mag *= 10) < this.mag) {
+      p += "0";
+    }
     //console.log(`N - ${this.num} M - ${this.mag}`)
-    return `${this.high}.${this.low}`;
+    return `${this.high}.${p}${this.low}`;
   }
   static from<T>(n: T): Fixed128 {
     if (n instanceof Fixed128) return n;
@@ -169,7 +176,7 @@ export class Fixed128 {
   }
 }
 
-function get_mag(x: i64): i64 {
+function get_mag(x: u64): u64 {
   switch (true) {
     case (x >= 100000000000000000): return 100000000000000000;
     case (x >= 10000000000000000): return 10000000000000000;

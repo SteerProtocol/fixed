@@ -9,6 +9,4 @@ function getTickFromPrice(price: f64): f64 {
     const tick = Math.log(price) / Math.log(f64(1.0001));
     return tick;
 }
-console.log("Fixed.log " + Fixed64.log(p, 1000000000000000).toString());
-console.log("Math.log  " + Math.log(p).toString());
-console.log(`Real: ${getTickFromPrice(p)} Fixed: ${Fixed64.divi(Fixed64.log(p, 1000000000000000), c)}`)
+console.log(`Real: ${getTickFromPrice(p)} Fixed: ${Fixed64.divi(Fixed64.log(p, 1000000000000000), c, 100_000)}`)
