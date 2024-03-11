@@ -1,5 +1,7 @@
 import { rainbow } from "as-rainbow/assembly";
 import { Fixed64 } from "../../assembly/fixed64";
+import { Fixed128 } from "../../assembly/fixed128";
+import { FixedARB } from "../../assembly/fixed";
 
 let currentSuite = "";
 let failedSuite = false;
@@ -38,6 +40,10 @@ export function expect<T>(left: T): Expectation {
   if (isString<T>()) return new Expectation(<string>left);
   else if (left instanceof Fixed64)
     return new Expectation(left.toString());
+  else if (left instanceof Fixed128)
+    return new Expectation(left.toString());
+  else if (left instanceof FixedARB)
+    return new Expectation(left.toString());
   else if (isInteger<T>() || isFloat<T>()) {
     // @ts-ignore
     return new Expectation(left.toString());
@@ -69,6 +75,10 @@ export class Expectation {
   toEqual<T>(right: T): Expectation {
     if (isString<T>()) this.right = <string>right;
     else if (right instanceof Fixed64)
+      this.right = right.toString();
+    else if (right instanceof Fixed128)
+      this.right = right.toString();
+    else if (right instanceof FixedARB)
       this.right = right.toString();
     // @ts-ignore
     else if (isInteger<T>() || isFloat<T>()) this.right = right.toString();

@@ -6,7 +6,7 @@ import { MpZ } from "@hypercubed/as-mpz";
  * Represents a fixed-point number up to 128 bits
  */
 export class Fixed128 {
-  constructor(public high: u64, public low: u64, public mag: u64 = 1) { }
+  constructor(public high: i64, public low: u64, public mag: u64 = 1) { }
   /**
    * Adds two quantities together to calculate the sum
    * @param lhs Number | String | Fixed
@@ -16,24 +16,26 @@ export class Fixed128 {
   static add<L, R>(lhs: L, rhs: R): Fixed128 {
     const l = Fixed128.from(lhs);
     const r = Fixed128.from(rhs);
+    console.log(`Left:\n - High: ${l.high}\n - Low: ${l.low}\n - Mag: ${l.mag}`);
+    console.log(`Right:\n - High: ${r.high}\n - Low: ${r.low}\n - Mag: ${r.mag}`);
     if (l.mag >= r.mag) {
       if (l.mag === r.mag) {
         const low = l.low + r.low;
-        const overflow = u64(low >= l.mag);
+        const overflow = low >= l.mag;
         if (overflow) {
-          const high = l.high + r.high + overflow;
+          const high = l.high + r.high + 1;
           return new Fixed128(high, low % l.mag, l.mag / 10);
         } else {
           const high = l.high + r.high;
           return new Fixed128(high, low, l.mag);
         }
       }
-      const left_low = l.low;
       const mag = l.mag / r.mag;
-      const low = left_low + (r.low * mag);
-      const overflow = u64(low >= l.mag);
+      const r_low = (r.low * mag);
+      const low = l.low + r_low;
+      const overflow = low >= l.mag;
       if (overflow) {
-        const high = l.high + r.high + overflow;
+        const high = l.high + r.high + 1;
         return new Fixed128(high, low % r.mag, l.mag / 10);
       } else {
         const high = l.high + r.high;
@@ -42,9 +44,9 @@ export class Fixed128 {
     } else {
       const mag = r.mag / l.mag;
       const low = (l.low * mag) + r.low;
-      const overflow = u64(low >= r.mag);
+      const overflow = low >= r.mag;
       if (overflow) {
-        const high = l.high + r.high + overflow;
+        const high = l.high + r.high + 1;
         return new Fixed128(high, low % r.mag, r.mag / 10);
       } else {
         const high = l.high + r.high;
@@ -61,11 +63,46 @@ export class Fixed128 {
   static sub<L, R>(lhs: L, rhs: R): Fixed128 {
     const l = Fixed128.from(lhs);
     const r = Fixed128.from(rhs);
-
-    const l_low = l.low;
-    const low = l_low - r.low;
-    const high = l.high - r.high + u64(low > l_low);
-    return new Fixed128(high, low);
+    if (l.mag >= r.mag) {
+      if (l.mag === r.mag) {
+        const low = l.low - r.low;
+        const carry = u64(i64(low) < i64(0));
+        const high = l.high - r.high;
+        const underflow = low <= (l.mag / 10);
+        if (carry) {
+          if (underflow) return new Fixed128(high - 1, (low + 10), get_expansion(low));
+          return new Fixed128(high - 1, low + 10, l.mag);
+        } else {
+          if (underflow) return new Fixed128(high, low, get_expansion(low));
+          return new Fixed128(high, low, l.mag);
+        }
+      }
+      const mag = l.mag / r.mag;
+      const low = l.low + (r.low * mag);
+      const carry = u64(i64(low) < i64(0));
+      const high = l.high - r.high;
+      const underflow = low <= (l.mag / 10);
+      if (carry) {
+        if (underflow) return new Fixed128(high - 1, (low + 10), get_expansion(low));
+        return new Fixed128(high - 1, low + 10, l.mag);
+      } else {
+        if (underflow) return new Fixed128(high, low, get_expansion(low));
+        return new Fixed128(high, low, l.mag);
+      }
+    } else {
+      const mag = r.mag / l.mag;
+      const low = (l.low * mag) + r.low;
+      const carry = u64(i64(low) < i64(0));
+      const high = l.high - r.high;
+      const underflow = low <= (r.mag / 10);
+      if (carry) {
+        if (underflow) return new Fixed128(high - 1, (low + 10), get_expansion(low));
+        return new Fixed128(high - 1, low + 10, r.mag);
+      } else {
+        if (underflow) return new Fixed128(high, low, get_expansion(low));
+        return new Fixed128(high, low, r.mag);
+      }
+    }
   }
   toString(): string {
     //console.log(`N - ${this.num} M - ${this.mag}`)
@@ -82,10 +119,10 @@ export class Fixed128 {
       if (str.length === 2) {
         const low = (str[1] || "").slice(0, 16);
         const mag: u64 = u64(10) ** low.length;
-        return new Fixed128(u64.parse(high), u64.parse(low), mag);
+        return new Fixed128(neg ? -i64.parse(high) : i64.parse(high), u64.parse(low), mag);
       } else {
         const num = i64.parse(high);
-        return new Fixed128(num, 0, 1);
+        return new Fixed128(neg ? -num : num, 0, 1);
       }
     }
     return unreachable();

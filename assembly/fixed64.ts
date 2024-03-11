@@ -1,4 +1,4 @@
-import { MpZ } from "@hypercubed/as-mpz";
+import { u128 } from "as-bignum/assembly";
 
 // @ts-ignore
 @inline const I64_MAX: i64 = 100000000000000000;
@@ -340,9 +340,16 @@ export class Fixed64 {
    * @returns Fixed
   */
   static log(x: u64, mag: u64 = 1000000000000000000): Fixed64 {
+    const mag_u128 = u128.from(mag);
     let result: u64 = 0;
     const term: u64 = ((x - 1) * mag) / (x + 1);
-    const term_mpz = MpZ.from(term).mul(term).div(mag);
+    const term_u128 = u128.div(
+      u128.mul(
+        u128.fromU64(term),
+        u128.from(term)
+      ),
+      u128.fromU64(mag)
+    );
     let powerTerm: u64 = term;
     let divisor = 1;
     let lastResult: u64 = 0;
@@ -351,7 +358,13 @@ export class Fixed64 {
       if (result === lastResult) {
         return new Fixed64(result * 2, mag);
       }
-      powerTerm = MpZ.from(powerTerm).mul(term_mpz).div(mag).toU64();
+      powerTerm = u128.div(
+        u128.mul(
+          u128.fromU64(powerTerm),
+          term_u128
+        ),
+        mag_u128
+      ).toU64();
       divisor += 2;
       lastResult = result;
     }
@@ -391,9 +404,6 @@ export class Fixed64 {
         const low = (str[1] || "").slice(0, 16);
         const mag: u64 = u64(10) ** low.length;
         let num = (i64.parse(high) * mag) + i64.parse(low);
-        if (str[1].length > 6) {
-          num += i32.parse(str[1].charAt(7)) > 4 ? 1 : 0;
-        }
         return new Fixed64(neg ? -num : num, mag);
       } else {
         const num = i64.parse(high)
