@@ -34,7 +34,7 @@ export class Fixed128 {
       const r_low = (r.low * mag);
       const low = l.low + r_low;
       const overflow = low >= l.mag;
-      console.log(`Overflow: ${overflow} ${low} ${l.mag}`)
+      console.log(`Overflow: ${overflow} High: ${l.high + r.high} Low: ${low}`)
       if (overflow) {
         const high = l.high + r.high + 1;
         return new Fixed128(high, low % r.mag, l.mag);
