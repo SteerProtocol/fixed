@@ -7,6 +7,12 @@ export class i128 {
     @inline static get Min(): i128 { return new i128(0, 0); }
     @inline static get Max(): i128 { return new i128(-1, -1); }
 
+    static fromU64(x: u64): i128 { return new i128(x, 0); }
+    static fromI64(x: i64): i128 { return new i128(x, x >> 63); }
+    // Pretty sure this is wrong ^^^
+    static fromU32(x: u32): i128 { return new i128(i64(x), 0); }
+    static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
+    
     constructor(public low: i64, public high: u64) { }
     /**
      * Returns true if i128 is positive
@@ -152,10 +158,11 @@ export class i128 {
      */
     @inline @operator("+")
     static add(a: i128, b: i128): i128 {
-        const blow = b.low;
-        const bhigh = b.low;
-        const low = a.low + blow - (bhigh >>> 63);
-        const high = a.low + bhigh + i64(low < blow);
+        const aLow = a.low;
+        const bLow = b.low;
+        const bHigh = b.high;
+        const low = aLow + b.low - (bHigh >>> 63);
+        const high = a.high + b.high + i64(low < bLow);
         return new i128(low, high);
     }
     /**
@@ -322,10 +329,7 @@ export class i128 {
     postDec(): i128 {
         return this.clone().preDec();
     }
-    tostr_u(): string {
-        return new u128(u64(this.low), this.high).toString();
-    }
-    tostr_s(): string {
+    toString(): string {
         if (this.isNeg()) {
             const r = this.abs();
             return "-" + new u128(u64(r.low), r.high).toString();
@@ -339,14 +343,6 @@ export class i128 {
     @inline
     clone(): i128 {
         return new i128(this.low, this.high);
-    }
-    
-    static fromString(str: string, radix: i32 = 10): i128 {
-        if (str.charCodeAt(0) === 45) {
-            return atou128(str, radix, 2);
-        } else {
-            return atou128(str, radix);
-        }
     }
 }
 

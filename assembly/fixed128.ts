@@ -1,5 +1,5 @@
 import { u128 } from "as-bignum/assembly";
-import { i128 } from "./i128";
+import { i128 } from "./src/i128";
 
 // @ts-ignore
 @inline const I64_MAX: i64 = 100000000000000000;
@@ -148,7 +148,7 @@ export class Fixed128 {
     }
     if (!high && this.num < 0) return `-${high.tostr_u()}.${p}${low.tostr_u()}`;
     return `${high.tostr_u()}.${p}${low.tostr_u()}`;*/
-    return this.num.tostr_u();
+    return this.num.toString();
   }
   static from<T>(n: T): Fixed128 {
     if (n instanceof Fixed128) return n;
@@ -162,10 +162,10 @@ export class Fixed128 {
         const low = (str[1] || "").slice(0, 16);
         const mag: u64 = u64(10) ** low.length;
         let num = (i64.parse(high) * mag) + i64.parse(low);
-        return new Fixed128(neg ? -num : num, mag);
+        return new Fixed128(i128.fromI64(neg ? -num : num), i128.fromU64(mag));
       } else {
         const num = i64.parse(high)
-        return new Fixed128(neg ? -num : num);
+        return new Fixed128(i128.fromI64(neg ? -num : num));
       }
     }
     return unreachable();
