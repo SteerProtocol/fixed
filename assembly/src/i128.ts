@@ -12,7 +12,7 @@ export class i128 {
     // Pretty sure this is wrong ^^^
     static fromU32(x: u32): i128 { return new i128(i64(x), 0); }
     static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
-    
+
     constructor(public low: i64, public high: u64) { }
     /**
      * Returns true if i128 is positive
@@ -158,6 +158,20 @@ export class i128 {
      */
     @inline @operator("+")
     static add(a: i128, b: i128): i128 {
+        if (a.isNeg()) return this.add_u(b, a);
+        const aLow = a.low;
+        const bLow = b.low;
+        const bHigh = b.high;
+        const low = aLow + b.low - (bHigh >>> 63);
+        const high = a.high + b.high + i64(low < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs addition between
+     * @returns this
+     */
+    @inline
+    static add_u(a: i128, b: i128): i128 {
         const aLow = a.low;
         const bLow = b.low;
         const bHigh = b.high;
@@ -171,19 +185,11 @@ export class i128 {
      */
     @inline @operator("-")
     static sub(a: i128, b: i128): i128 {
-        const alow = a.low;
-        const bhigh = b.low;
-        const low = alow - b.low + (b.low >>> 63);
-        const high = a.low - bhigh - i64(low > alow);
+        const aLow = a.low;
+        const bLow = b.low;
+        const low = aLow - bLow;
+        const high = a.high - b.high - u64(aLow < bLow);
         return new i128(low, high);
-    }
-    /**
-     * Performs unsigned multiplication
-     * @returns i128
-     */
-    @inline
-    static mul_u(a: i128, b: i128): i128 {
-        return umul128wide(a, b);
     }
     /**
      * Performs multiplication

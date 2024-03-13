@@ -17,4 +17,4 @@ console.log(" - high: " + u128.div(new u128(a.low, a.high), new u128(b.low, b.hi
 console.log(i128.div(new i128(-6, 0), new i128(3, 0)).toString());
 console.log(new i128(-6, 0).abs().neg().toString());
 
-console.log(i128.add(i128.fromI32(60025), i128.fromI32(2550)).toString())
+console.log(i128.add(new i128(-2, 0), new i128(10, 0)).toString())
