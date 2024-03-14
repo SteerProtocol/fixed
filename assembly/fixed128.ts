@@ -138,17 +138,19 @@ export class Fixed128 {
   }
 
   toString(): string {
-    /*//console.log(`N - ${this.num} M - ${this.mag}`)
     const high = this.num / this.mag;
     const low = (this.num % this.mag).abs();
     let p = "";
-    let mag = get_mag(low);
-    while ((mag *= 10) < this.mag) {
-      p += "0";
+    if (low > i128.Zero) {
+      let tmp = this.mag / i128.Ten;
+      console.log(`T: ${low} M: ${this.mag}`)
+      while (tmp > low) {
+        p += "0";
+        tmp /= i128.Ten;
+      }
     }
-    if (!high && this.num < 0) return `-${high.tostr_u()}.${p}${low.tostr_u()}`;
-    return `${high.tostr_u()}.${p}${low.tostr_u()}`;*/
-    return this.num.toString();
+    if (!high && this.num < i128.Zero) return `-${high.toString()}.${p}${low.toString()}`;
+    return `${high.toString()}.${p}${low.toString()}`;
   }
   static from<T>(n: T): Fixed128 {
     if (n instanceof Fixed128) return n;

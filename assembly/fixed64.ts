@@ -38,6 +38,7 @@ export class Fixed64 {
     const r = Fixed64.from(rhs);
     if (l.mag >= r.mag) {
       if (l.mag === r.mag) {
+        if (l.num === r.num) return new Fixed64(0, 1);
         return new Fixed64(l.num - r.num, l.mag);
       }
       const mag = l.mag / r.mag;
@@ -404,9 +405,10 @@ export class Fixed64 {
     const high = this.num / this.mag;
     const low = abs(this.num % this.mag);
     let p = "";
-    let mag = get_mag(low);
-    while ((mag *= 10) < this.mag) {
+    let tmp = this.mag / 10;
+    while (low < tmp) {
       p += "0";
+      tmp /= 10;
     }
     if (!high && this.num < 0) return `-${high}.${p}${low}`;
     return `${high}.${p}${low}`;

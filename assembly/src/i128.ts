@@ -1,19 +1,19 @@
 import { u128 } from "as-bignum/assembly";
-import { atou128 } from "as-bignum/assembly/utils";
 
 export class i128 {
     @inline static get Zero(): i128 { return new i128(0, 0); }
     @inline static get One(): i128 { return new i128(1, 0); }
+    @inline static get Ten(): i128 { return new i128(10, 0); }
     @inline static get Min(): i128 { return new i128(0, 0); }
     @inline static get Max(): i128 { return new i128(-1, -1); }
 
     static fromU64(x: u64): i128 { return new i128(x, 0); }
-    static fromI64(x: i64): i128 { return new i128(x, x >> 63); }
+    static fromI64(x: i64): i128 { return new i128(x, 0); }
     // Pretty sure this is wrong ^^^
     static fromU32(x: u32): i128 { return new i128(i64(x), 0); }
     static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
 
-    constructor(public low: i64, public high: u64) { }
+    constructor(public low: i64, public high: u64 = 0) { }
     /**
      * Returns true if i128 is positive
      * @returns boolean
@@ -212,6 +212,7 @@ export class i128 {
      */
     @inline @operator("/")
     static div(a: i128, b: i128): i128 {
+        if (b.isZero()) throw new Error("Division by zero");
         // check for integer overflow
         if (a.isNeg()) {
             if (b.isNeg()) return _div(a.abs(), b.abs());
@@ -221,6 +222,17 @@ export class i128 {
         } else {
             return _div(a, b);
         }
+    }
+    /**
+     * Returns the modulus
+     * @returns i128
+     */
+    @inline @operator("%")
+    static mod(a: i128, b: i128): i128 {
+        if (b.isZero()) throw new Error("Division by zero");
+        const quot = this.div(a, b);
+        const rem = this.sub(a, this.mul(quot, b));
+        return rem;
     }
     /**
      * Tests for equality

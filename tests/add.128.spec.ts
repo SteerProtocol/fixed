@@ -1,9 +1,10 @@
 import { Fixed128 } from "../assembly/fixed128";
+import { i128 } from "../assembly/src/i128";
 import { describe, expect, initialize } from "./lib/test";
 
 initialize("@steerprotocol/fixed");
 describe("Should Perform Addition", () => {
-  expect(Fixed128.add(600.25, 25.5))
+  expect(Fixed128.add(new Fixed128(new i128(60025, 0), new i128(100, 0)), new Fixed128(new i128(255, 0), new i128(10, 0))))
     .toEqual(600.25 + 25.5)
     .desc("600.25 + 25.5")
     .test(true);
@@ -12,7 +13,7 @@ describe("Should Perform Addition", () => {
     .toEqual(25.5 + 600.25)
     .desc("25.5 + 600.25")
     .test(true);
-
+console.log(`L: ${Fixed128.from(-600.25).num} R: ${Fixed128.from(25.5).num} R: ${i128.add(Fixed128.from(-600.25).num, Fixed128.from(25.5).num)} RR: ${Fixed128.add(-600.25, 25.5).num.toString()}`)
   expect(Fixed128.add(-600.25, 25.5))
     .toEqual(-600.25 + 25.5)
     .desc("-600.25 + 25.5")
