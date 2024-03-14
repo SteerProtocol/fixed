@@ -1,4 +1,3 @@
-import { u128 } from "as-bignum/assembly";
 import { i128 } from "./src/i128";
 
 // @ts-ignore
@@ -17,15 +16,41 @@ export class Fixed128 {
   static add<L, R>(lhs: L, rhs: R): Fixed128 {
     const l = Fixed128.from(lhs);
     const r = Fixed128.from(rhs);
+    console.log(`LN: ${l.num} LM: ${l.mag} RN: ${r.num} RM: ${r.mag}`)
     if (l.mag >= r.mag) {
       if (l.mag === r.mag) {
-        return new Fixed128(l.num + r.num, l.mag);
+        return new Fixed128(
+          i128.add(
+            l.num,
+            r.num
+          ),
+          l.mag
+        );
       }
-      const mag = l.mag / r.mag;
-      return new Fixed128(l.num + (r.num * mag), l.mag);
+      const mag = i128.div(l.mag, r.mag);
+      console.log(`Calculating ${l.num} + ${i128.mul(r.num, i128.Ten)} = ${l.num + (r.num * mag)}`)
+      return new Fixed128(
+        i128.add(
+          l.num,
+          i128.mul(
+            r.num,
+            mag
+          )
+        ),
+        l.mag
+      );
     } else {
-      const mag = r.mag / l.mag;
-      return new Fixed128((l.num * mag) + r.num, r.mag);
+      const mag = i128.div(r.mag, l.mag);
+      return new Fixed128(
+        i128.add(
+          i128.mul(
+            l.num,
+            mag
+          ),
+          r.num
+        ),
+        r.mag
+      );
     }
   }
   /**
@@ -70,7 +95,6 @@ export class Fixed128 {
   static divi<D, A>(dividend: D, divisor: A, precision: u64 = 100): Fixed128 {
     const l = Fixed128.from(dividend);
     const r = Fixed128.from(divisor);
-    console.log(`LN: ${l.num} LM: ${l.mag} RN: ${r.num} RM: ${r.mag}`)
     if (l.mag >= r.mag) {
       const result = (l.num * precision) / r.num;
       return new Fixed128(result, precision);
@@ -143,7 +167,6 @@ export class Fixed128 {
     let p = "";
     if (low > i128.Zero) {
       let tmp = this.mag / i128.Ten;
-      console.log(`T: ${low} M: ${this.mag}`)
       while (tmp > low) {
         p += "0";
         tmp /= i128.Ten;

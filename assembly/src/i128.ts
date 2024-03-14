@@ -158,7 +158,7 @@ export class i128 {
      */
     @inline @operator("+")
     static add(a: i128, b: i128): i128 {
-        if (a.isNeg()) return this.add_u(b, a);
+        if (a.isNeg()) return this.add_core(b, a);
         const aLow = a.low;
         const bLow = b.low;
         const bHigh = b.high;
@@ -171,7 +171,7 @@ export class i128 {
      * @returns this
      */
     @inline
-    static add_u(a: i128, b: i128): i128 {
+    static add_core(a: i128, b: i128): i128 {
         const aLow = a.low;
         const bLow = b.low;
         const bHigh = b.high;
@@ -229,9 +229,10 @@ export class i128 {
      */
     @inline @operator("%")
     static mod(a: i128, b: i128): i128 {
+        const aAbs = a.abs();
         if (b.isZero()) throw new Error("Division by zero");
-        const quot = this.div(a, b);
-        const rem = this.sub(a, this.mul(quot, b));
+        const quot = this.div(aAbs, b);
+        const rem = this.sub(aAbs, this.mul(quot, b));
         return rem;
     }
     /**

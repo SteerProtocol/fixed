@@ -13,7 +13,7 @@ describe("Should Perform Addition", () => {
     .toEqual(25.5 + 600.25)
     .desc("25.5 + 600.25")
     .test(true);
-console.log(`L: ${Fixed128.from(-600.25).num} R: ${Fixed128.from(25.5).num} R: ${i128.add(Fixed128.from(-600.25).num, Fixed128.from(25.5).num)} RR: ${Fixed128.add(-600.25, 25.5).num.toString()}`)
+console.log(`L: ${Fixed128.from(-600.25).num} @ ${Fixed128.from(-600.25).mag} R: ${Fixed128.from(25.5).num} @ ${Fixed128.from(25.5).mag} R: ${i128.add(Fixed128.from(-600.25).num, Fixed128.from(25.5).num)} RR: ${Fixed128.add(-600.25, 25.5).num.toString()}`)
   expect(Fixed128.add(-600.25, 25.5))
     .toEqual(-600.25 + 25.5)
     .desc("-600.25 + 25.5")
