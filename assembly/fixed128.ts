@@ -28,7 +28,7 @@ export class Fixed128 {
         );
       }
       const mag = i128.div(l.mag, r.mag);
-      console.log(`Calculating ${l.num} + ${i128.mul(r.num, i128.Ten)} = ${l.num + (r.num * mag)}`)
+      console.log(`Calculating ${l.num} + ${i128.mul(r.num, mag)} = ${l.num + (r.num * mag)}`)
       return new Fixed128(
         i128.add(
           l.num,
@@ -41,6 +41,7 @@ export class Fixed128 {
       );
     } else {
       const mag = i128.div(r.mag, l.mag);
+      console.log(`Calculating ${i128.mul(l.num, mag)} + ${r.num} = ${(l.num * mag) + r.num}`)
       return new Fixed128(
         i128.add(
           i128.mul(
@@ -86,13 +87,12 @@ export class Fixed128 {
     return new Fixed128(l.num * r.num, l.mag * r.mag);
   }
   /**
-   * Divides divident and divisor to calculate the quotient without accuracy
+   * Divides dividend and divisor to calculate the quotient with configurable precision
    * @param dividend Number | String | Fixed
    * @param divisor Number | String | Fixed
-   * @param mode 0 = raw | 1 = nearest | 2 = ceil | 3 = floor
    * @returns Fixed
    */
-  static divi<D, A>(dividend: D, divisor: A, precision: u64 = 100): Fixed128 {
+  static divp<D, A>(dividend: D, divisor: A, precision: i128 = i128.fromU64(100)): Fixed128 {
     const l = Fixed128.from(dividend);
     const r = Fixed128.from(divisor);
     if (l.mag >= r.mag) {
@@ -103,6 +103,7 @@ export class Fixed128 {
       return new Fixed128(result, precision);
     }
   }
+
   /**
    * Rounds quantity and returns result
    * @param x Number | String | Fixed
@@ -162,17 +163,20 @@ export class Fixed128 {
   }
 
   toString(): string {
-    const high = this.num / this.mag;
-    const low = (this.num % this.mag).abs();
+    const n = this.num;
+    const m = this.mag;
+    const high = n.abs() / m;
+    const ten = i128.Ten;
+    const low = (n % m).abs();
     let p = "";
     if (low > i128.Zero) {
-      let tmp = this.mag / i128.Ten;
+      let tmp = m / ten;
       while (tmp > low) {
         p += "0";
-        tmp /= i128.Ten;
+        tmp /= ten;
       }
     }
-    if (!high && this.num < i128.Zero) return `-${high.toString()}.${p}${low.toString()}`;
+    if (n < i128.Zero) return `-${high.toString()}.${p}${low.toString()}`;
     return `${high.toString()}.${p}${low.toString()}`;
   }
   static from<T>(n: T): Fixed128 {

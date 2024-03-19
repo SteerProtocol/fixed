@@ -108,17 +108,15 @@ export class i128 {
      */
     @inline @operator("<<")
     static shl(value: i128, shift: i32): i128 {
-        shift &= 127;
+        let shift64 = (shift & 127) as u64;
 
-        let shift64 = shift as u64;
-
-        let mod1 = ((((shift64 + 127) | shift64) & 64) >> 6) - 1;
-        let mod2 = (shift64 >> 6) - 1;
+        const mod1 = ((((shift64 + 127) | shift64) & 64) >> 6) - 1;
+        const mod2 = (shift64 >> 6) - 1;
 
         shift64 &= 63;
 
-        let vl = value.low;
-        let lo = vl << shift64;
+        const vl = value.low;
+        const lo = vl << shift64;
         let hi = lo & ~mod2;
 
         hi |= ((value.high << shift64) | ((vl >> (64 - shift64)) & mod1)) & mod2;
