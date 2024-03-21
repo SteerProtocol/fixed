@@ -1,4 +1,5 @@
 import { u128 } from "as-bignum/assembly";
+import { atoi128, i128toDecimalString } from "../util";
 
 export class i128 {
     @inline static get Zero(): i128 { return new i128(0, 0); }
@@ -12,6 +13,8 @@ export class i128 {
     // Pretty sure this is wrong ^^^
     static fromU32(x: u32): i128 { return new i128(i64(x), 0); }
     static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
+    static fromHiLo(low: i64, high: u64 = 0): i128 { return new i128(low, high); }
+    static fromString(str: string, radix: i32 = 10): i128 { return atoi128(str, radix); }
 
     constructor(public low: i64, public high: u64 = 0) { }
     /**
@@ -347,11 +350,40 @@ export class i128 {
         return this.clone().preDec();
     }
     toString(): string {
-        if (this.isNeg()) {
-            const r = this.abs();
-            return "-" + new u128(u64(r.low), r.high).toString();
-        }
-        return new u128(u64(this.low), this.high).toString();
+        if (this.isNeg()) return "-" + i128toDecimalString(this.abs()).toString();
+        return i128toDecimalString(this);
+    }
+    /**
+     * Returns value a a 64-bit integer
+     * @returns i64
+     */
+    @inline
+    toI64(): i64 {
+        return this.low;
+    }
+    /**
+     * Returns value a a 64-bit unsigned integer
+     * @returns u64
+     */
+    @inline
+    toU64(): u64 {
+        return this.low;
+    }
+    /**
+     * Returns value a a 64-bit integer
+     * @returns i32
+     */
+    @inline
+    toI32(): i32 {
+        return <i32>this.low;
+    }
+    /**
+     * Returns value a a 64-bit unsigned integer
+     * @returns u32
+     */
+    @inline
+    toU32(): u32 {
+        return <u32>this.low;
     }
     /**
      * Returns a new instance of this

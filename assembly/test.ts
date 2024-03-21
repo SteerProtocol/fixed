@@ -10,14 +10,11 @@ console.log("i128: " + u.toString());
 console.log(" - low: " + u64(u.low).toString());
 console.log(" - high: " + u.high.toString());
 
-console.log("u128:  " + u128.div(new u128(a.low, a.high), new u128(b.low, b.high)).toString());
-console.log(" - low: " + u128.div(new u128(a.low, a.high), new u128(b.low, b.high)).lo.toString());
-console.log(" - high: " + u128.div(new u128(a.low, a.high), new u128(b.low, b.high)).hi.toString());
-
 console.log(i128.div(new i128(-6, 0), new i128(3, 0)).toString());
 console.log(new i128(-6, 0).abs().neg().toString());
 
 console.log(i128.add(new i128(-60025, 0), new i128(2550, 0)).toString())
 
 console.log(((u64(12345) * u64(10)) >> 32).toString());
-console.log((12345 % 10).toString())
+console.log((12345 % 10).toString());
+console.log(i128.fromString(U64.MAX_VALUE.toString()).toString())
