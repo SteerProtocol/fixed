@@ -1,5 +1,7 @@
 import { u128 } from "as-bignum/assembly";
 import { i128 } from "./src/i128"
+import { Fixed128 } from "./fixed128";
+import { Fixed64 } from "./fixed64";
 //                 9223372036854775807
 const a = new i128(9223372036854775807, 0)
 const b = new i128(2, 0);
@@ -17,4 +19,6 @@ console.log(i128.add(new i128(-60025, 0), new i128(2550, 0)).toString())
 
 console.log(((u64(12345) * u64(10)) >> 32).toString());
 console.log((12345 % 10).toString());
-console.log(i128.fromString(U64.MAX_VALUE.toString()).toString())
+console.log(i128.fromString(U64.MAX_VALUE.toString()).toString());
+console.log(Fixed128.log(i128.fromI32(10)).toString());
+console.log(Fixed64.log(10).toString())

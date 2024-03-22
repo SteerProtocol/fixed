@@ -1,3 +1,4 @@
+import { u128 } from "as-bignum/assembly";
 import { i128 } from "./src/i128";
 
 // @ts-ignore
@@ -160,6 +161,38 @@ export class Fixed128 {
     const f = Fixed128.from(x);
     f.num = f.num.abs();
     return f;
+  }
+
+  /**
+     * Calculates the natural log and returns the quantity
+     * @param x Number | String | Fixed
+     * @returns Fixed
+    */
+  static log(x: i128, mag: i128 = i128.fromI64(1000000000000000000)): Fixed128 {
+    const x_u = x.toU128();
+    const mag_u = mag.toU128();
+    let result = u128.Zero;
+    const term = ((x_u - u128.One) * mag_u) / (x_u + u128.One);
+    const term_sq = u128.div(u128.mul(term, term), mag_u);
+    let powerTerm = term;
+    let divisor = u128.One;
+    let lastResult = u128.Zero;
+    while (true) {
+      result += powerTerm / divisor;
+      if (result === lastResult) {
+        result *= u128.from(2);
+        return new Fixed128(i128.fromHiLo(result.lo, result.hi), i128.fromHiLo(mag_u.lo, mag_u.hi));
+      }
+      powerTerm = u128.div(
+        u128.mul(
+          powerTerm,
+          term_sq
+        ),
+        mag_u
+      );
+      divisor += u128.fromI32(2);
+      lastResult = result;
+    }
   }
 
   toString(): string {

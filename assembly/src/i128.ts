@@ -15,7 +15,7 @@ export class i128 {
     static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
     static fromHiLo(low: i64, high: u64 = 0): i128 { return new i128(low, high); }
     static fromString(str: string, radix: i32 = 10): i128 { return atoi128(str, radix); }
-
+    static fromU128(x: u128): i128 { return new i128(x.lo, x.hi); }
     constructor(public low: i64, public high: u64 = 0) { }
     /**
      * Returns true if i128 is positive
@@ -352,6 +352,14 @@ export class i128 {
     toString(): string {
         if (this.isNeg()) return "-" + i128toDecimalString(this.abs()).toString();
         return i128toDecimalString(this);
+    }
+    /**
+     * Returns value a 128-bit unsigned integer
+     * @returns u128
+     */
+    @inline
+    toU128(): u128 {
+        return new u128(this.low, this.high);
     }
     /**
      * Returns value a a 64-bit integer
