@@ -26,7 +26,7 @@ describe("Should Perform Addition", () => {
   expect(Fixed128.add(0.5, 0.5))
     .toEqual(0.5 + 0.5)
     .desc("0.5 + 0.5")
-    .test(true);
+    .show(true);
 
   expect(Fixed128.add(0.6, 0.5))
     .toEqual(0.6 + 0.5)
@@ -42,7 +42,6 @@ describe("Should Perform Addition", () => {
     .toEqual(0.5 + 0.55)
     .desc("0.5 + 0.55")
     .test(true);
-  console.log(`L: ${Fixed128.from(-0.55).num}`)
   expect(Fixed128.add(-0.55, 0.5))
     .toEqual(-0.55 + 0.5)
     .desc("-0.55 + 0.5")

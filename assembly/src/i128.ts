@@ -8,15 +8,78 @@ export class i128 {
     @inline static get Min(): i128 { return new i128(0, 0); }
     @inline static get Max(): i128 { return new i128(-1, -1); }
 
-    static fromU64(x: u64): i128 { return new i128(x, 0); }
-    static fromI64(x: i64): i128 { return new i128(x, 0); }
-    // Pretty sure this is wrong ^^^
-    static fromU32(x: u32): i128 { return new i128(i64(x), 0); }
-    static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
-    static fromHiLo(low: i64, high: u64 = 0): i128 { return new i128(low, high); }
-    static fromString(str: string, radix: i32 = 10): i128 { return atoi128(str, radix); }
-    static fromU128(x: u128): i128 { return new i128(x.lo, x.hi); }
-    constructor(public low: i64, public high: u64 = 0) { }
+    constructor(public low: u64, public high: u64 = 0, public sign: i32 = 0) { }
+    /**
+     * Performs addition
+     * @returns i128
+     */
+    @inline @operator("+")
+    static add(a: i128, b: i128): i128 {
+        if (a.isNeg()) return this.add_u(b, a);
+        const aLow = a.low;
+        const bLow = b.low;
+        const bHigh = b.high;
+        const low = aLow + b.low - (bHigh >>> 63);
+        const high = a.high + b.high + i64(low < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs unsigned addition
+     * @returns i128
+     */
+    @inline
+    static add_u(a: i128, b: i128): i128 {
+        const aLow = a.low;
+        const bLow = b.low;
+        const bHigh = b.high;
+        const low = aLow + b.low - (bHigh >>> 63);
+        const high = a.high + b.high + i64(low < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs subtraction
+     * @returns i128
+     */
+    @inline @operator("-")
+    static sub(a: i128, b: i128): i128 {
+        const aLow = a.low;
+        const bLow = b.low;
+        const low = aLow - bLow;
+        const high = a.high - b.high - u64(aLow < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs multiplication
+     * @returns i128
+     */
+    @inline @operator("*")
+    static mul(a: i128, b: i128): i128 {
+        if (a.isNeg()) {
+            if (b.isNeg()) return umul128wide(a.abs(), b.abs());
+            return umul128wide(a.abs(), b).neg();
+        } else if (b.isNeg()) {
+            return umul128wide(a, b.abs()).neg();
+        } else {
+            return umul128wide(a, b);
+        }
+    }
+    /**
+     * Performs division
+     * @returns i128
+     */
+    @inline @operator("/")
+    static div(a: i128, b: i128): i128 {
+        if (b.isZero()) throw new Error("Division by zero");
+        // check for integer overflow
+        if (a.isNeg()) {
+            if (b.isNeg()) return _div(a.abs(), b.abs());
+            return _div(a.abs(), b.abs()).neg();
+        } else if (b.isNeg()) {
+            return _div(a, b.abs()).neg();
+        } else {
+            return _div(a, b);
+        }
+    }
     /**
      * Returns true if i128 is positive
      * @returns boolean
@@ -31,7 +94,7 @@ export class i128 {
      */
     @inline
     isNeg(): boolean {
-        return this.low < 0;
+        return this.low >= u64(I64.MAX_VALUE);
     }
     /**
      * Returns true if i128 is zero
@@ -152,77 +215,6 @@ export class i128 {
     @inline @operator(">>")
     static shr(value: i128, shift: i32): i128 {
         return this.shr_u(value, shift);
-    }
-    /**
-     * Performs addition between
-     * @returns this
-     */
-    @inline @operator("+")
-    static add(a: i128, b: i128): i128 {
-        if (a.isNeg()) return this.add_core(b, a);
-        const aLow = a.low;
-        const bLow = b.low;
-        const bHigh = b.high;
-        const low = aLow + b.low - (bHigh >>> 63);
-        const high = a.high + b.high + i64(low < bLow);
-        return new i128(low, high);
-    }
-    /**
-     * Performs addition between
-     * @returns this
-     */
-    @inline
-    static add_core(a: i128, b: i128): i128 {
-        const aLow = a.low;
-        const bLow = b.low;
-        const bHigh = b.high;
-        const low = aLow + b.low - (bHigh >>> 63);
-        const high = a.high + b.high + i64(low < bLow);
-        return new i128(low, high);
-    }
-    /**
-     * Performs subtraction
-     * @returns i128
-     */
-    @inline @operator("-")
-    static sub(a: i128, b: i128): i128 {
-        const aLow = a.low;
-        const bLow = b.low;
-        const low = aLow - bLow;
-        const high = a.high - b.high - u64(aLow < bLow);
-        return new i128(low, high);
-    }
-    /**
-     * Performs multiplication
-     * @returns i128
-     */
-    @inline @operator("*")
-    static mul(a: i128, b: i128): i128 {
-        if (a.isNeg()) {
-            if (b.isNeg()) return umul128wide(a.abs(), b.abs());
-            return umul128wide(a.abs(), b).neg();
-        } else if (b.isNeg()) {
-            return umul128wide(a, b.abs()).neg();
-        } else {
-            return umul128wide(a, b);
-        }
-    }
-    /**
-     * Performs division
-     * @returns i128
-     */
-    @inline @operator("/")
-    static div(a: i128, b: i128): i128 {
-        if (b.isZero()) throw new Error("Division by zero");
-        // check for integer overflow
-        if (a.isNeg()) {
-            if (b.isNeg()) return _div(a.abs(), b.abs());
-            return _div(a.abs(), b.abs()).neg();
-        } else if (b.isNeg()) {
-            return _div(a, b.abs()).neg();
-        } else {
-            return _div(a, b);
-        }
     }
     /**
      * Returns the modulus
@@ -350,8 +342,14 @@ export class i128 {
         return this.clone().preDec();
     }
     toString(): string {
-        if (this.isNeg()) return "-" + i128toDecimalString(this.abs()).toString();
-        return i128toDecimalString(this);
+        if (this.isZero()) {
+            return "0";
+        }
+        if (this.isNeg()) {
+            return "-" + i128toDecimalString(this.neg());
+        } else {
+            return i128toDecimalString(this);
+        }
     }
     /**
      * Returns value a 128-bit unsigned integer
@@ -401,6 +399,17 @@ export class i128 {
     clone(): i128 {
         return new i128(this.low, this.high);
     }
+
+
+    static fromU64(x: u64): i128 { return new i128(x, 0); }
+    static fromI64(x: i64): i128 { return new i128(u64(x), x >> 63, i32(x < 0)); }
+    // Pretty sure this is wrong ^^^
+    static fromU32(x: u32): i128 { return new i128(i64(x), 0); }
+    static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
+    static fromHiLo(low: i64, high: u64 = 0): i128 { return new i128(low, high); }
+    static fromString(value: string): i128 { return atoi128(value) }
+
+    static fromU128(x: u128): i128 { return new i128(x.lo, x.hi); }
 }
 
 function clz128(low: i64, high: u64): i32 {

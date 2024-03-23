@@ -17,7 +17,6 @@ export class Fixed128 {
   static add<L, R>(lhs: L, rhs: R): Fixed128 {
     const l = Fixed128.from(lhs);
     const r = Fixed128.from(rhs);
-    console.log(`LN: ${l.num} LM: ${l.mag} RN: ${r.num} RM: ${r.mag}`)
     if (l.mag >= r.mag) {
       if (l.mag === r.mag) {
         return new Fixed128(
@@ -29,7 +28,6 @@ export class Fixed128 {
         );
       }
       const mag = i128.div(l.mag, r.mag);
-      console.log(`Calculating ${l.num} + ${i128.mul(r.num, mag)} = ${l.num + (r.num * mag)}`)
       return new Fixed128(
         i128.add(
           l.num,
@@ -42,7 +40,6 @@ export class Fixed128 {
       );
     } else {
       const mag = i128.div(r.mag, l.mag);
-      console.log(`Calculating ${i128.mul(l.num, mag)} + ${r.num} = ${(l.num * mag) + r.num}`)
       return new Fixed128(
         i128.add(
           i128.mul(
@@ -168,7 +165,7 @@ export class Fixed128 {
      * @param x Number | String | Fixed
      * @returns Fixed
     */
-  static log(x: i128, mag: i128 = i128.fromI64(1000000000000000000)): Fixed128 {
+  static log_taylor(x: i128, mag: i128 = i128.fromI64(1000000000000000000)): Fixed128 {
     const x_u = x.toU128();
     const mag_u = mag.toU128();
     let result = u128.Zero;
@@ -194,23 +191,70 @@ export class Fixed128 {
       lastResult = result;
     }
   }
+  static log(x: f64): f64 {
+    const
+      ln2_hi = reinterpret<f64>(0x3FE62E42FEE00000), // 6.93147180369123816490e-01
+      ln2_lo = reinterpret<f64>(0x3DEA39EF35793C76), // 1.90821492927058770002e-10
+      Lg1 = reinterpret<f64>(0x3FE5555555555593), // 6.666666666666735130e-01
+      Lg2 = reinterpret<f64>(0x3FD999999997FA04), // 3.999999999940941908e-01
+      Lg3 = reinterpret<f64>(0x3FD2492494229359), // 2.857142874366239149e-01
+      Lg4 = reinterpret<f64>(0x3FCC71C51D8E78AF), // 2.222219843214978396e-01
+      Lg5 = reinterpret<f64>(0x3FC7466496CB03DE), // 1.818357216161805012e-01
+      Lg6 = reinterpret<f64>(0x3FC39A09D078C69F), // 1.531383769920937332e-01
+      Lg7 = reinterpret<f64>(0x3FC2F112DF3E5244), // 1.479819860511658591e-01
+      Ox1p54 = reinterpret<f64>(0x4350000000000000); // 0x1p54
 
-  toString(): string {
-    const n = this.num;
-    const m = this.mag;
-    const high = n.abs() / m;
-    const ten = i128.Ten;
-    const low = (n % m).abs();
-    let p = "";
-    if (low > i128.Zero) {
-      let tmp = m / ten;
-      while (tmp > low) {
-        p += "0";
-        tmp /= ten;
-      }
+    const ln2_hif = Fixed128.from("0.6931471803691238");
+    const ln2_lof = Fixed128.from("0.00000000019082149292705877");
+    console.log(`${ln2_hi} = ${ln2_hif}`);
+    console.log(`${ln2_lo} = ${ln2_lof}`);
+
+    let u = reinterpret<u64>(x);
+    let hx = u32(u >> 32);
+    let k = 0;
+    let sign = hx >> 31;
+    if (sign || hx < 0x00100000) {
+      if (u << 1 == 0) return -1 / (x * x);
+      if (sign) return (x - x) / 0.0;
+      k -= 54;
+      x *= Ox1p54;
+      u = reinterpret<u64>(x);
+      hx = u32(u >> 32);
+    } else if (hx >= 0x7FF00000) {
+      return x;
+    } else if (hx == 0x3FF00000 && u << 32 == 0) {
+      return 0;
     }
-    if (n < i128.Zero) return `-${high.toString()}.${p}${low.toString()}`;
-    return `${high.toString()}.${p}${low.toString()}`;
+    hx += 0x3FF00000 - 0x3FE6A09E;
+    k += (<i32>hx >> 20) - 0x3FF;
+    hx = (hx & 0x000FFFFF) + 0x3FE6A09E;
+    u = <u64>hx << 32 | (u & 0xFFFFFFFF);
+    x = reinterpret<f64>(u);
+    let f = x - 1.0;
+    let hfsq = 0.5 * f * f;
+    let s = f / (2.0 + f);
+    let z = s * s;
+    let w = z * z;
+    let t1 = w * (Lg2 + w * (Lg4 + w * Lg6));
+    let t2 = z * (Lg1 + w * (Lg3 + w * (Lg5 + w * Lg7)));
+    let r = t2 + t1;
+    let dk = <f64>k;
+    return s * (hfsq + r) + dk * ln2_lo - hfsq + f + dk * ln2_hi;
+  }
+  toString(): string {
+    const neg = this.num.isNeg();
+    const num_u = this.num.abs();
+    const mag = this.mag;
+    const high = num_u / mag;
+    const low = (num_u % mag);
+    let p = "";
+    let tmp = mag / i128.Ten;
+    while (low < tmp) {
+      p += "0";
+      tmp /= i128.Ten;
+    }
+    if (neg) return `-${high}.${p}${low}`;
+    return `${high}.${p}${low}`;
   }
   static from<T>(n: T): Fixed128 {
     if (n instanceof Fixed128) return n;
@@ -221,13 +265,13 @@ export class Fixed128 {
       const neg = high.charCodeAt(0) === 45;
       if (neg) high = high.slice(1, high.length);
       if (str.length === 2) {
-        const low = (str[1] || "").slice(0, 16);
-        const mag: u64 = u64(10) ** low.length;
-        let num = (i64.parse(high) * mag) + i64.parse(low);
-        return new Fixed128(i128.fromI64(neg ? -num : num), i128.fromU64(mag));
+        const low = (str[1] || "");
+        const mag: u128 = u128.from(10) ** low.length;
+        let num = (u128.from(high) * mag) + u128.from(low);
+        return new Fixed128(neg ? i128.fromU128(num).neg() : i128.fromU128(num), i128.fromU128(mag));
       } else {
-        const num = i64.parse(high)
-        return new Fixed128(i128.fromI64(neg ? -num : num));
+        const num = u128.from(high)
+        return new Fixed128(neg ? i128.fromU128(num).neg() : i128.fromU128(num));
       }
     }
     return unreachable();
