@@ -1,4 +1,3 @@
-import { u128 } from "as-bignum/assembly";
 import { atoi128, i128toDecimalString } from "../util";
 
 export class i128 {
@@ -15,8 +14,438 @@ export class i128 {
     static fromI32(x: i32): i128 { return new i128(i64(x), 0); }
     static fromHiLo(low: i64, high: u64 = 0): i128 { return new i128(low, high); }
     static fromString(str: string, radix: i32 = 10): i128 { return atoi128(str, radix); }
-
+    static from<T>(x: T): i128 {
+        if (x instanceof i128) return x;
+        if (x instanceof u64) return new i128(<i64>x, 0);
+        if (x instanceof i64) return new i128(<i64>x, 0);
+        if (x instanceof u32) return new i128(i64(x), 0);
+        if (x instanceof i32) return new i128(i64(x), 0);
+        if (isString<T>()) return atoi128(<string>x);
+        return unreachable();
+    }
     constructor(public low: i64, public high: u64 = 0) { }
+    /**
+     * Performs addition
+     * @returns this
+     */
+    /*@inline
+    static add<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        if (_a.isNeg()) return this.add_u(b, a);
+        const _b = i128.from(b);
+        const aLow = _a.low;
+        const bLow = _b.low;
+        const bHigh = _b.high;
+        const low = aLow + _b.low - (bHigh >>> 63);
+        const high = _a.high + _b.high + i64(low < bLow);
+        return new i128(low, high);
+    }*/
+    @inline @operator("+")
+    static add(a: i128, b: i128): i128 {
+        if (a.isNeg()) return i128.add_u(b, a);
+        const aLow = a.low;
+        const bLow = b.low;
+        const bHigh = b.high;
+        const low = aLow + b.low - (bHigh >>> 63);
+        const high = a.high + b.high + i64(low < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs unsigned addition
+     * @returns this
+     */
+    @inline
+    static add_u(a: i128, b: i128): i128 {
+        const aLow = a.low;
+        const bLow = b.low;
+        const bHigh = b.high;
+        const low = aLow + b.low - (bHigh >>> 63);
+        const high = a.high + b.high + u64(low < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs subtraction
+     * @returns i128
+     */
+    /*@inline
+    static sub<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        const aLow = _a.low;
+        const bLow = _b.low;
+        const low = aLow - bLow;
+        const high = _a.high - _b.high - u64(aLow < bLow);
+        return new i128(low, high);
+    }*/
+    @inline @operator("-")
+    static sub(a: i128, b: i128): i128 {
+        const aLow = a.low;
+        const bLow = b.low;
+        const low = aLow - bLow;
+        const high = a.high - b.high - u64(aLow < bLow);
+        return new i128(low, high);
+    }
+    /**
+     * Performs multiplication
+     * @returns i128
+     */
+    /*@inline
+    static mul<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        if (_a.isNeg()) {
+            if (_b.isNeg()) return umul128wide(_a.abs(), _b.abs());
+            return umul128wide(_a.abs(), _b).neg();
+        } else if (_b.isNeg()) {
+            return umul128wide(_a, _b.abs()).neg();
+        } else {
+            return umul128wide(_a, _b);
+        }
+    }*/
+    @inline @operator("*")
+    static mul(a: i128, b: i128): i128 {
+        if (a.isNeg()) {
+            if (b.isNeg()) return umul128wide(a.abs(), b.abs());
+            return umul128wide(a.abs(), b).neg();
+        } else if (b.isNeg()) {
+            return umul128wide(a, b.abs()).neg();
+        } else {
+            return umul128wide(a, b);
+        }
+    }
+    /**
+     * Performs division
+     * @returns i128
+     */
+    /*@inline
+    static div<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        if (_b.isZero()) throw new Error("Division by zero");
+        // check for integer overflow
+        if (_a.isNeg()) {
+            if (_b.isNeg()) return _div(_a.abs(), _b.abs());
+            return _div(_a.abs(), _b.abs()).neg();
+        } else if (_b.isNeg()) {
+            return _div(_a, _b.abs()).neg();
+        } else {
+            return _div(_a, _b);
+        }
+    }*/
+    @inline @operator("/")
+    static div(a: i128, b: i128): i128 {
+        if (b.isZero()) throw new Error("Division by zero");
+        // check for integer overflow
+        if (a.isNeg()) {
+            if (b.isNeg()) return _div(a.abs(), b.abs());
+            return _div(a.abs(), b.abs()).neg();
+        } else if (b.isNeg()) {
+            return _div(a, b.abs()).neg();
+        } else {
+            return _div(a, b);
+        }
+    }
+    /**
+     * Performs the bang (!) operator
+     * @returns boolean
+     */
+    /*@inline
+    static isEmpty<T extends i128 | string | number>(value: T): boolean {
+        const _value = i128.from(value);
+        return !(_value.low | _value.high)
+    }*/
+    @inline @operator.prefix("!")
+    static isEmpty(value: i128): boolean {
+        return !(value.low | value.high)
+    }
+    /**
+     * Performs bitwise or (|)
+     * @returns i128
+     */
+    /*@inline
+    static or<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        return new i128(_a.low | _b.low, _a.high | _b.high);
+    }*/
+    @inline @operator("|")
+    static or(a: i128, b: i128): i128 {
+        return new i128(a.low | b.low, a.high | b.high);
+    }
+    /**
+     * Performs bitwise exclusive or (^)
+     * @returns i128
+     */
+    /*@inline
+    static xor<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        return new i128(_a.low ^ _b.low, _a.high ^ _b.high);
+    }*/
+    @inline @operator('^')
+    static xor(a: i128, b: i128): i128 {
+        return new i128(a.low ^ b.low, a.high ^ b.high);
+    }
+    /**
+     * Performs bitwise and (&)
+     * @returns i128
+     */
+    /*@inline
+    static and<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        return new i128(_a.low & _b.low, _a.high & _b.high);
+    }*/
+    @inline @operator("&")
+    static and(a: i128, b: i128): i128 {
+        return new i128(a.low & b.low, a.high & b.high);
+    }
+    /**
+     * Performs bitwise shift left (<<)
+     * @returns i128
+     */
+    /*@inline
+    static shl<T extends i128 | string | number>(value: T, shift: i32): i128 {
+        const _value = i128.from(value);
+        let shift64 = (shift & 127) as u64;
+
+        const mod1 = ((((shift64 + 127) | shift64) & 64) >> 6) - 1;
+        const mod2 = (shift64 >> 6) - 1;
+
+        shift64 &= 63;
+
+        const vl = _value.low;
+        const lo = vl << shift64;
+        let hi = lo & ~mod2;
+
+        hi |= ((_value.high << shift64) | ((vl >> (64 - shift64)) & mod1)) & mod2;
+
+        return new i128(lo & mod2, hi);
+    }*/
+    @inline @operator("<<")
+    static shl(value: i128, shift: i32): i128 {
+        let shift64 = (shift & 127) as u64;
+
+        const mod1 = ((((shift64 + 127) | shift64) & 64) >> 6) - 1;
+        const mod2 = (shift64 >> 6) - 1;
+
+        shift64 &= 63;
+
+        const vl = value.low;
+        const lo = vl << shift64;
+        let hi = lo & ~mod2;
+
+        hi |= ((value.high << shift64) | ((vl >> (64 - shift64)) & mod1)) & mod2;
+
+        return new i128(lo & mod2, hi);
+    }
+    /**
+     * Performs bitwise unsigned right shift (>>>)
+     * @returns i128
+     */
+    /*@inline
+    static shr_u<T extends i128 | string | number>(value: T, shift: i32): i128 {
+        const _value = i128.from(value);
+        shift &= 127;
+
+        let shift64: i64 = shift;
+
+        let mod1: i64 = ((((shift64 + 127) | shift64) & 64) >>> 6) - 1;
+        let mod2: i64 = (shift64 >>> 6) - 1;
+
+        shift64 &= 63;
+
+        let vh = _value.high;
+        let high = vh >>> shift64;
+        let low = high & ~mod2;
+
+        low |= ((_value.low >>> shift64) | ((vh << (64 - shift64)) & mod1)) & mod2;
+
+        return new i128(low, high & mod2);
+    }*/
+    @inline @operator('>>>')
+    static shr_u(value: i128, shift: i32): i128 {
+        shift &= 127;
+
+        let shift64: i64 = shift;
+
+        let mod1: i64 = ((((shift64 + 127) | shift64) & 64) >>> 6) - 1;
+        let mod2: i64 = (shift64 >>> 6) - 1;
+
+        shift64 &= 63;
+
+        let vh = value.high;
+        let high = vh >>> shift64;
+        let low = high & ~mod2;
+
+        low |= ((value.low >>> shift64) | ((vh << (64 - shift64)) & mod1)) & mod2;
+
+        return new i128(low, high & mod2);
+    }
+    /**
+     * Performs bitwise signed right shift (>>)
+     * @returns i128
+     */
+    /*@inline
+    static shr<T extends i128 | string | number>(value: T, shift: i32): i128 {
+        const _value = i128.from(value);
+        // Make this actually signed
+        return this.shr_u(_value, shift);
+    }*/
+    @inline @operator(">>")
+    static shr(value: i128, shift: i32): i128 {
+        return this.shr_u(value, shift);
+    }
+    /**
+     * Returns the modulus
+     * @returns i128
+     */
+    /*@inline
+    static mod<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): i128 {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        const aAbs = _a.abs();
+        if (_b.isZero()) throw new Error("Division by zero");
+        const quot = this.div(aAbs, _b);
+        const rem = this.sub(aAbs, this.mul(quot, _b));
+        return rem;
+    }*/
+    @inline @operator("%")
+    static mod(a: i128, b: i128): i128 {
+        const aAbs = a.abs();
+        if (b.isZero()) throw new Error("Division by zero");
+        const quot = this.div(aAbs, b);
+        const rem = this.sub(aAbs, this.mul(quot, b));
+        return rem;
+    }
+    /**
+     * Tests for equality
+     * @returns boolean
+     */
+    /*@inline
+    static eq<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): boolean {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        return _a.high == _b.high && _a.low === _b.low;
+    }*/
+    @inline @operator("==")
+    static eq(a: i128, b: i128): boolean {
+        return a.high == b.high && a.low === b.low;
+    }
+    /**
+     * Checks if a !== b
+     * @returns boolean
+     */
+    /*@inline
+    static neq<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): boolean {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        return !i128.eq(_a, _b);
+    }*/
+    @inline @operator("!=")
+    static neq(a: i128, b: i128): boolean {
+        return !i128.eq(a, b);
+    }
+    /**
+     * Checks if a < b
+     * @returns boolean
+     */
+    /*@inline
+    static lt<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): boolean {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        const aHigh = _a.high;
+        const bHigh = _b.high;
+        if (aHigh == bHigh) {
+            return _a.low < _b.low;
+        } else {
+            return aHigh < bHigh;
+        }
+    }*/
+    @inline @operator("<")
+    static lt(a: i128, b: i128): boolean {
+        const aHigh = a.high;
+        const bHigh = b.high;
+        if (aHigh == bHigh) {
+            return a.low < b.low;
+        } else {
+            return aHigh < bHigh;
+        }
+    }
+
+    /**
+     * Checks if a > b
+     * @returns boolean
+     */
+    /*@inline
+    static gt<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): boolean {
+        const _a = i128.from(a);
+        const _b = i128.from(b);
+        const aHigh = _a.high;
+        const bHigh = _b.high;
+        if (aHigh == bHigh) {
+            return _a.low > _b.low;
+        } else {
+            return aHigh > bHigh;
+        }
+    }*/
+    @inline @operator(">")
+    static gt(a: i128, b: i128): boolean {
+        const aHigh = a.high;
+        const bHigh = b.high;
+        if (aHigh == bHigh) {
+            return a.low > b.low;
+        } else {
+            return aHigh > bHigh;
+        }
+    }
+
+    /**
+     * Checks if a <= b
+     * @returns boolean
+     */
+    /*@inline
+    static le<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): boolean {
+        return !this.gt(a, b);
+    }*/
+    @inline @operator("<=")
+    static le(a: i128, b: i128): boolean {
+        return !this.gt(a, b);
+    }
+
+    /**
+     * Checks if a >= b
+     * @returns boolean
+     */
+    /*@inline
+    static ge<A extends i128 | string | number, B extends i128 | string | number>(a: A, b: B): boolean {
+        return !i128.lt(a, b);
+    }*/
+    @inline @operator(">=")
+    static ge(a: i128, b: i128): boolean {
+        return !i128.lt(a, b);
+    }
+
+    /**
+     * Returns the number of leading zeros
+     * @returns i32
+     */
+    @inline
+    static clz<T extends i128 | string | number>(value: T): i32 {
+        const _value = i128.from(value);
+        return clz128(_value.low, _value.high);
+    }
+
+    /**
+     * Returns the number of trailing zeros
+     * @returns i32
+     */
+    @inline
+    static ctz<T extends i128 | string | number>(value: T): i32 {
+        const _value = i128.from(value);
+        return ctz128(_value.low, _value.high);
+    }
+
     /**
      * Returns true if i128 is positive
      * @returns boolean
@@ -74,245 +503,6 @@ export class i128 {
         return this;
     }
     /**
-     * Performs the bang (!) operator
-     * @returns boolean
-     */
-    @inline @operator.prefix("!")
-    static isEmpty(value: i128): boolean {
-        return !(value.low | value.high)
-    }
-    /**
-     * Performs bitwise or (|)
-     * @returns i128
-     */
-    @inline @operator("|")
-    static or(a: i128, b: i128): i128 {
-        return new i128(a.low | b.low, a.high | b.high);
-    }
-    /**
-     * Performs bitwise exclusive or (^)
-     * @returns i128
-     */
-    @inline @operator('^')
-    static xor(a: i128, b: i128): i128 {
-        return new i128(a.low ^ b.low, a.high ^ b.high);
-    }
-    /**
-     * Performs bitwise and (&)
-     * @returns i128
-     */
-    @inline @operator("&")
-    static and(a: i128, b: i128): i128 {
-        return new i128(a.low & b.low, a.high & b.high);
-    }
-    /**
-     * Performs bitwise shift left (<<)
-     * @returns i128
-     */
-    @inline @operator("<<")
-    static shl(value: i128, shift: i32): i128 {
-        let shift64 = (shift & 127) as u64;
-
-        const mod1 = ((((shift64 + 127) | shift64) & 64) >> 6) - 1;
-        const mod2 = (shift64 >> 6) - 1;
-
-        shift64 &= 63;
-
-        const vl = value.low;
-        const lo = vl << shift64;
-        let hi = lo & ~mod2;
-
-        hi |= ((value.high << shift64) | ((vl >> (64 - shift64)) & mod1)) & mod2;
-
-        return new i128(lo & mod2, hi);
-    }
-    /**
-     * Performs bitwise unsigned right shift (>>>)
-     * @returns i128
-     */
-    @inline @operator('>>>')
-    static shr_u(value: i128, shift: i32): i128 {
-        shift &= 127;
-
-        let shift64: i64 = shift;
-
-        let mod1: i64 = ((((shift64 + 127) | shift64) & 64) >>> 6) - 1;
-        let mod2: i64 = (shift64 >>> 6) - 1;
-
-        shift64 &= 63;
-
-        let vh = value.high;
-        let high = vh >>> shift64;
-        let low = high & ~mod2;
-
-        low |= ((value.low >>> shift64) | ((vh << (64 - shift64)) & mod1)) & mod2;
-
-        return new i128(low, high & mod2);
-    }
-    @inline @operator(">>")
-    static shr(value: i128, shift: i32): i128 {
-        return this.shr_u(value, shift);
-    }
-    /**
-     * Performs addition between
-     * @returns this
-     */
-    @inline @operator("+")
-    static add(a: i128, b: i128): i128 {
-        if (a.isNeg()) return this.add_core(b, a);
-        const aLow = a.low;
-        const bLow = b.low;
-        const bHigh = b.high;
-        const low = aLow + b.low - (bHigh >>> 63);
-        const high = a.high + b.high + i64(low < bLow);
-        return new i128(low, high);
-    }
-    /**
-     * Performs addition between
-     * @returns this
-     */
-    @inline
-    static add_core(a: i128, b: i128): i128 {
-        const aLow = a.low;
-        const bLow = b.low;
-        const bHigh = b.high;
-        const low = aLow + b.low - (bHigh >>> 63);
-        const high = a.high + b.high + i64(low < bLow);
-        return new i128(low, high);
-    }
-    /**
-     * Performs subtraction
-     * @returns i128
-     */
-    @inline @operator("-")
-    static sub(a: i128, b: i128): i128 {
-        const aLow = a.low;
-        const bLow = b.low;
-        const low = aLow - bLow;
-        const high = a.high - b.high - u64(aLow < bLow);
-        return new i128(low, high);
-    }
-    /**
-     * Performs multiplication
-     * @returns i128
-     */
-    @inline @operator("*")
-    static mul(a: i128, b: i128): i128 {
-        if (a.isNeg()) {
-            if (b.isNeg()) return umul128wide(a.abs(), b.abs());
-            return umul128wide(a.abs(), b).neg();
-        } else if (b.isNeg()) {
-            return umul128wide(a, b.abs()).neg();
-        } else {
-            return umul128wide(a, b);
-        }
-    }
-    /**
-     * Performs division
-     * @returns i128
-     */
-    @inline @operator("/")
-    static div(a: i128, b: i128): i128 {
-        if (b.isZero()) throw new Error("Division by zero");
-        // check for integer overflow
-        if (a.isNeg()) {
-            if (b.isNeg()) return _div(a.abs(), b.abs());
-            return _div(a.abs(), b.abs()).neg();
-        } else if (b.isNeg()) {
-            return _div(a, b.abs()).neg();
-        } else {
-            return _div(a, b);
-        }
-    }
-    /**
-     * Returns the modulus
-     * @returns i128
-     */
-    @inline @operator("%")
-    static mod(a: i128, b: i128): i128 {
-        const aAbs = a.abs();
-        if (b.isZero()) throw new Error("Division by zero");
-        const quot = this.div(aAbs, b);
-        const rem = this.sub(aAbs, this.mul(quot, b));
-        return rem;
-    }
-    /**
-     * Tests for equality
-     * @returns boolean
-     */
-    @inline @operator("==")
-    static eq(a: i128, b: i128): boolean {
-        return a.high == b.high && a.low === b.low;
-    }
-    /**
-     * Tests for inequality
-     * @returns boolean
-     */
-    @inline @operator("!=")
-    static neq(a: i128, b: i128): boolean {
-        return !i128.eq(a, b);
-    }
-    /**
-     * Checks if a < b
-     * @returns boolean
-     */
-    @inline @operator("<")
-    static lt(a: i128, b: i128): boolean {
-        const aHigh = a.high;
-        const bHigh = b.high;
-        if (aHigh == bHigh) {
-            return a.low < b.low;
-        } else {
-            return aHigh < bHigh;
-        }
-    }
-    /**
-     * Checks if a > b
-     * @returns boolean
-     */
-    @inline @operator(">")
-    static gt(a: i128, b: i128): boolean {
-        const aHigh = a.high;
-        const bHigh = b.high;
-        if (aHigh == bHigh) {
-            return a.low > b.low;
-        } else {
-            return aHigh > bHigh;
-        }
-    }
-    /**
-     * Checks if a <= b
-     * @returns boolean
-     */
-    @inline @operator("<=")
-    static le(a: i128, b: i128): boolean {
-        return !this.gt(a, b);
-    }
-    /**
-     * Checks if a >= b
-     * @returns boolean
-     */
-    @inline @operator(">=")
-    static ge(a: i128, b: i128): boolean {
-        return !this.lt(a, b);
-    }
-    /**
-     * Returns the number of leading zeros
-     * @returns i32
-     */
-    @inline
-    static clz(value: i128): i32 {
-        return clz128(value.low, value.high);
-    }
-    /**
-     * Returns the number of trailing zeros
-     * @returns i32
-     */
-    @inline
-    static ctz(value: i128): i32 {
-        return ctz128(value.low, value.high);
-    }
-    /**
      * Returns the absolute value
      * @returns i128
      */
@@ -350,6 +540,7 @@ export class i128 {
         return this.clone().preDec();
     }
     toString(): string {
+        if (this.isZero()) return "0";
         if (this.isNeg()) return "-" + i128toDecimalString(this.abs()).toString();
         return i128toDecimalString(this);
     }

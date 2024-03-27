@@ -16,9 +16,19 @@ export class Fixed128 {
   static add<L, R>(lhs: L, rhs: R): Fixed128 {
     const l = Fixed128.from(lhs);
     const r = Fixed128.from(rhs);
-    console.log(`LN: ${l.num} LM: ${l.mag} RN: ${r.num} RM: ${r.mag}`)
     if (l.mag >= r.mag) {
       if (l.mag === r.mag) {
+        // Handle carrying up
+        if (
+          l.num.high === 0
+          && l.num.low > 4
+          && l.num === r.num
+        ) {
+          return new Fixed128(
+            i128.add(l.num, r.num),
+            i128.div(l.mag, i128.Ten)
+          );
+        }
         return new Fixed128(
           i128.add(
             l.num,
@@ -28,7 +38,6 @@ export class Fixed128 {
         );
       }
       const mag = i128.div(l.mag, r.mag);
-      console.log(`Calculating ${l.num} + ${i128.mul(r.num, mag)} = ${l.num + (r.num * mag)}`)
       return new Fixed128(
         i128.add(
           l.num,
@@ -41,7 +50,6 @@ export class Fixed128 {
       );
     } else {
       const mag = i128.div(r.mag, l.mag);
-      console.log(`Calculating ${i128.mul(l.num, mag)} + ${r.num} = ${(l.num * mag) + r.num}`)
       return new Fixed128(
         i128.add(
           i128.mul(
@@ -65,13 +73,67 @@ export class Fixed128 {
     const r = Fixed128.from(rhs);
     if (l.mag >= r.mag) {
       if (l.mag === r.mag) {
-        return new Fixed128(l.num - r.num, l.mag);
+        if (l.num === r.num) return new Fixed128(i128.Zero);
+        return new Fixed128(
+          i128.sub(
+            l.num,
+            r.num
+          ),
+          l.mag
+        );
       }
-      const mag = l.mag / r.mag;
-      return new Fixed128(l.num - (r.num * mag), l.mag);
+      const mag = i128.div(
+        l.mag,
+        r.mag
+      );
+      const left = l.num;
+      const right = i128.mul(
+        r.num,
+        mag
+      );
+      if (left >= right) {
+        return new Fixed128(
+          i128.sub(
+            left,
+            right
+          ), l.mag
+        );
+      } else {
+        return new Fixed128(
+          i128.sub(
+            right,
+            left
+          ).neg(),
+          l.mag
+        );
+      }
     } else {
-      const mag = r.mag / l.mag;
-      return new Fixed128((l.num * mag) - r.num, r.mag);
+      const mag = i128.div(
+        r.mag,
+        l.mag
+      );
+      const left = i128.mul(
+        l.num,
+        mag
+      );
+      const right = r.num;
+      if (left >= right) {
+        return new Fixed128(
+          i128.sub(
+            left,
+            right
+          ),
+          r.mag
+        );
+      } else {
+        return new Fixed128(
+          i128.sub(
+            right,
+            left
+          ).neg(),
+          r.mag
+        );
+      }
     }
   }
   /**
@@ -84,7 +146,16 @@ export class Fixed128 {
     const l = Fixed128.from(lhs);
     const r = Fixed128.from(rhs);
     // May change later. I don't like how mag is done. Can cause overflow.
-    return new Fixed128(l.num * r.num, l.mag * r.mag);
+    return new Fixed128(
+      i128.mul(
+        l.num,
+        r.num
+      ),
+      i128.mul(
+        l.mag,
+        r.mag
+      )
+    );
   }
   /**
    * Divides dividend and divisor to calculate the quotient with configurable precision
@@ -96,10 +167,21 @@ export class Fixed128 {
     const l = Fixed128.from(dividend);
     const r = Fixed128.from(divisor);
     if (l.mag >= r.mag) {
-      const result = (l.num * precision) / r.num;
+      const result = i128.div(
+        i128.mul(
+          l.num,
+          precision
+        ),
+        r.num
+      );
       return new Fixed128(result, precision);
     } else {
-      const result = (l.num * precision) / r.num;
+      const result = i128.div(
+        i128.mul(
+          l.num,
+          precision
+        ), r.num
+      );
       return new Fixed128(result, precision);
     }
   }
@@ -112,16 +194,31 @@ export class Fixed128 {
   static round<T>(x: T): Fixed128 {
     const f = Fixed128.from(x);
     const mag = f.mag;
-    if (mag === 1) return f;
-    const high = f.num / (mag / 10);
-    const rem = high % 10;
-    if (rem > 4) {
-      f.num = (high / 10) + 1;
-      f.mag = 1;
+    if (mag === i128.One) return f;
+    const high = i128.div(
+      f.num,
+      i128.div(
+        mag,
+        i128.Ten
+      )
+    );
+    const rem = i128.mod(
+      high,
+      i128.Ten
+    );
+    if (i128.gt(rem, 4)) {
+      f.num = i128.add(
+        i128.div(
+          high,
+          10
+        ),
+        1
+      );
+      f.mag = i128.One;
       return f;
     } else {
-      f.num = high / 10;
-      f.mag = 1;
+      f.num = i128.div(high, 10);
+      f.mag = i128.One;
       return f;
     }
   }
@@ -133,9 +230,9 @@ export class Fixed128 {
   static floor<T>(x: T): Fixed128 {
     const f = Fixed128.from(x);
     const mag = f.mag;
-    if (mag === 1) return f;
-    f.num = f.num / mag;
-    f.mag = 1;
+    if (mag === i128.One) return f;
+    f.num = i128.div(f.num, mag);
+    f.mag = i128.One;
     return f;
   }
   /**
@@ -146,9 +243,12 @@ export class Fixed128 {
   static ceil<T>(x: T): Fixed128 {
     const f = Fixed128.from(x);
     const mag = f.mag;
-    if (mag === 1) return f;
-    f.num = (f.num / mag) + 1;
-    f.mag = 1;
+    if (mag === i128.One) return f;
+    f.num = i128.add(
+      i128.div(f.num, mag),
+      1
+    );
+    f.mag = i128.One;
     return f;
   }
   /**
@@ -165,16 +265,13 @@ export class Fixed128 {
   toString(): string {
     const n = this.num;
     const m = this.mag;
-    const high = n.abs() / m;
-    const ten = i128.Ten;
-    const low = (n % m).abs();
+    const high = i128.div(n.abs(), m);
+    const low = i128.mod(n, m).abs();
     let p = "";
-    if (low > i128.Zero) {
-      let tmp = m / ten;
-      while (tmp > low) {
-        p += "0";
-        tmp /= ten;
-      }
+    let tmp = i128.div(m, i128.Ten);
+    while (low < tmp) {
+      p += "0";
+      tmp = i128.div(tmp, i128.Ten);
     }
     if (n < i128.Zero) return `-${high.toString()}.${p}${low.toString()}`;
     return `${high.toString()}.${p}${low.toString()}`;
@@ -188,7 +285,7 @@ export class Fixed128 {
       const neg = high.charCodeAt(0) === 45;
       if (neg) high = high.slice(1, high.length);
       if (str.length === 2) {
-        const low = (str[1] || "").slice(0, 16);
+        const low = (str[1] || "");
         const mag: u64 = u64(10) ** low.length;
         let num = (i64.parse(high) * mag) + i64.parse(low);
         return new Fixed128(i128.fromI64(neg ? -num : num), i128.fromU64(mag));

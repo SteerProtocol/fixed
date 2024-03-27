@@ -57,6 +57,11 @@ export class Fixed64 {
   static mult<L, R>(lhs: L, rhs: R): Fixed64 {
     const l = Fixed64.from(lhs);
     const r = Fixed64.from(rhs);
+    if (l.mag === r.mag) {
+      if (((l.num / l.mag) + (r.num / r.mag)) > 9) {
+        return new Fixed64(l.num * r.num, (l.mag * r.mag) / 10);
+      }
+    }
     // May change later. I don't like how mag is done. Can cause overflow.
     return new Fixed64(l.num * r.num, l.mag * r.mag);
   }
