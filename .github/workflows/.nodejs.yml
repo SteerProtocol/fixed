@@ -18,32 +18,55 @@ jobs:
         if: steps.node-cache.outputs.cache-hit != 'true'
         run: yarn install
 
-      - name: Build Addition Tests
-        run: yarn run build:add
+      - name: Build Addition Tests (64)
+        run: yarn run build:add.64
       
-      - name: Build Subtraction Tests
-        run: yarn run build:sub
+      - name: Build Subtraction Tests (64)
+        run: yarn run build:sub.64
       
-      - name: Build Multiplication Tests
-        run: yarn run build:mult
+      - name: Build Multiplication Tests (64)
+        run: yarn run build:mult.64
 
-      - name: Build Division Tests
-        run: yarn run build:div
+      - name: Build Division Tests (64)
+        run: yarn run build:div.64
 
-      - name: Build Logarithm Tests
-        run: yarn run build:log
+      - name: Build Logarithm Tests (64)
+        run: yarn run build:log.64
 
-      - name: Run Addition Tests
-        run: yarn run test --suite add
 
-      - name: Run Subtraction Tests
-        run: yarn run test --suite sub
+      - name: Run Addition Tests (64)
+        run: yarn run test --suite add.64
 
-      - name: Run Multiplication Tests
-        run: yarn run test --suite mult
+      - name: Run Subtraction Tests (64)
+        run: yarn run test --suite sub.64
 
-      - name: Run Division Tests
-        run: yarn run test --suite div
+      - name: Run Multiplication Tests (64)
+        run: yarn run test --suite mult.64
 
-      - name: Run Logarithm Tests
-        run: yarn run test --suite log
+      - name: Run Division Tests (64)
+        run: yarn run test --suite div.64
+
+      - name: Run Logarithm Tests (64)
+        run: yarn run test --suite log.64
+
+
+      - name: Build Addition Tests (128)
+        run: yarn run build:add.128
+      
+      - name: Build Subtraction Tests (128)
+        run: yarn run build:sub.128
+
+      - name: Run Multiplication Tests (128)
+        run: yarn run test --suite mult.128
+
+      - name: Run Division Tests (128)
+        run: yarn run test --suite div.128
+
+      - name: Run Addition Tests (128)
+        run: yarn run test --suite add.128
+
+      - name: Run Subtraction Tests (128)
+        run: yarn run test --suite sub.128
+
+      - name: Run Multiplication Tests (128)
+        run: yarn run test --suite mult.128
