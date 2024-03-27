@@ -35,19 +35,19 @@ jobs:
 
 
       - name: Run Addition Tests (64)
-        run: yarn run test --suite add.64
+        run: node ./tests/test.js --suite add.64
 
       - name: Run Subtraction Tests (64)
-        run: yarn run test --suite sub.64
+        run: node ./tests/test.js --suite sub.64
 
       - name: Run Multiplication Tests (64)
-        run: yarn run test --suite mult.64
+        run: node ./tests/test.js --suite mult.64
 
       - name: Run Division Tests (64)
-        run: yarn run test --suite div.64
+        run: node ./tests/test.js --suite div.64
 
       - name: Run Logarithm Tests (64)
-        run: yarn run test --suite log.64
+        run: node ./tests/test.js --suite log.64
 
 
       - name: Build Addition Tests (128)
@@ -57,16 +57,16 @@ jobs:
         run: yarn run build:sub.128
 
       - name: Run Multiplication Tests (128)
-        run: yarn run test --suite mult.128
+        run: node ./tests/test.js --suite mult.128
 
       - name: Run Division Tests (128)
-        run: yarn run test --suite div.128
+        run: node ./tests/test.js --suite div.128
 
       - name: Run Addition Tests (128)
-        run: yarn run test --suite add.128
+        run: node ./tests/test.js --suite add.128
 
       - name: Run Subtraction Tests (128)
-        run: yarn run test --suite sub.128
+        run: node ./tests/test.js --suite sub.128
 
       - name: Run Multiplication Tests (128)
-        run: yarn run test --suite mult.128
+        run: node ./tests/test.js --suite mult.128
