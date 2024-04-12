@@ -1,5 +1,6 @@
 import { u128 } from "as-bignum/assembly";
 import { i128 } from "./src/i128";
+import { Float } from "./float";
 
 // @ts-ignore
 @inline const I64_MAX: i64 = 100000000000000000;
@@ -192,33 +193,52 @@ export class Fixed128 {
     }
   }
   static log(x: f64): f64 {
-    const
-      ln2_hi = reinterpret<f64>(0x3FE62E42FEE00000), // 6.93147180369123816490e-01
-      ln2_lo = reinterpret<f64>(0x3DEA39EF35793C76), // 1.90821492927058770002e-10
-      Lg1 = reinterpret<f64>(0x3FE5555555555593), // 6.666666666666735130e-01
-      Lg2 = reinterpret<f64>(0x3FD999999997FA04), // 3.999999999940941908e-01
-      Lg3 = reinterpret<f64>(0x3FD2492494229359), // 2.857142874366239149e-01
-      Lg4 = reinterpret<f64>(0x3FCC71C51D8E78AF), // 2.222219843214978396e-01
-      Lg5 = reinterpret<f64>(0x3FC7466496CB03DE), // 1.818357216161805012e-01
-      Lg6 = reinterpret<f64>(0x3FC39A09D078C69F), // 1.531383769920937332e-01
-      Lg7 = reinterpret<f64>(0x3FC2F112DF3E5244), // 1.479819860511658591e-01
-      Ox1p54 = reinterpret<f64>(0x4350000000000000); // 0x1p54
+    const ln2_hi = reinterpret<f64>(0x3FE62E42FEE00000); // 6.93147180369123816490e-01
+    const ln2_lo = reinterpret<f64>(0x3DEA39EF35793C76); // 1.90821492927058770002e-10
+    const Lg1 = reinterpret<f64>(0x3FE5555555555593); // 6.666666666666735130e-01
+    const Lg2 = reinterpret<f64>(0x3FD999999997FA04); // 3.999999999940941908e-01
+    const Lg3 = reinterpret<f64>(0x3FD2492494229359); // 2.857142874366239149e-01
+    const Lg4 = reinterpret<f64>(0x3FCC71C51D8E78AF); // 2.222219843214978396e-01
+    const Lg5 = reinterpret<f64>(0x3FC7466496CB03DE); // 1.818357216161805012e-01
+    const Lg6 = reinterpret<f64>(0x3FC39A09D078C69F); // 1.531383769920937332e-01
+    const Lg7 = reinterpret<f64>(0x3FC2F112DF3E5244); // 1.479819860511658591e-01
+    const Ox1p54 = reinterpret<f64>(0x4350000000000000); // 0x1p54
+
+    let xf = Fixed128.from(x);
 
     const ln2_hif = Fixed128.from("0.6931471803691238");
     const ln2_lof = Fixed128.from("0.00000000019082149292705877");
+    const lg1f = Fixed128.from("0.6666666666666735");
+    const lg2f = Fixed128.from("0.3999999999940942");
+    const lg3f = Fixed128.from("0.2857142874366239");
+    const lg4f = Fixed128.from("0.22222198432149785");
+    const lg5f = Fixed128.from("0.1818357216161805");
+    const lg6f = Fixed128.from("0.15313837699209374");
+    const lg7f = Fixed128.from("0.14798198605116587");
+    const Ox1p54f = Fixed128.from("18014398509481985.0");
     console.log(`${ln2_hi} = ${ln2_hif}`);
     console.log(`${ln2_lo} = ${ln2_lof}`);
-
-    let u = reinterpret<u64>(x);
+    console.log(`${Lg1} = ${lg1f}`);
+    console.log(`${Lg2} = ${lg2f}`);
+    console.log(`${Lg3} = ${lg3f}`);
+    console.log(`${Lg4} = ${lg4f}`);
+    console.log(`${Lg5} = ${lg5f}`);
+    console.log(`${Lg6} = ${lg6f}`);
+    console.log(`${Lg7} = ${lg7f}`);
+    console.log(`${Ox1p54} = ${Ox1p54f}`);
+    let u = Float.fromFloat(x).reinterpret();
+    console.log(`Reinterpret<u64>(x) ${Float.fromFloat(x).reinterpret()} == ${u}`);
     let hx = u32(u >> 32);
     let k = 0;
     let sign = hx >> 31;
     if (sign || hx < 0x00100000) {
       if (u << 1 == 0) return -1 / (x * x);
-      if (sign) return (x - x) / 0.0;
+      if (sign) throw new Error("NaN");
       k -= 54;
       x *= Ox1p54;
-      u = reinterpret<u64>(x);
+      xf = Fixed128.mult(xf, Ox1p54f);
+      console.log(`a: ${x} = ${xf}`);
+      u = Float.fromFixed(xf).reinterpret();//reinterpret<u64>(x);
       hx = u32(u >> 32);
     } else if (hx >= 0x7FF00000) {
       return x;
@@ -245,16 +265,16 @@ export class Fixed128 {
     const neg = this.num.isNeg();
     const num_u = this.num.abs();
     const mag = this.mag;
-    const high = num_u / mag;
-    const low = (num_u % mag);
+    const high = i128.div(num_u, mag);
+    const low = i128.mod(num_u, mag);
     let p = "";
-    let tmp = mag / i128.Ten;
+    let tmp = i128.div(mag, i128.Ten);
     while (low < tmp) {
       p += "0";
-      tmp /= i128.Ten;
+      tmp = i128.div(tmp, i128.Ten);
     }
     if (neg) return `-${high}.${p}${low}`;
-    return `${high}.${p}${low}`;
+    return `${high.toString()}.${p}${low}`;
   }
   static from<T>(n: T): Fixed128 {
     if (n instanceof Fixed128) return n;
